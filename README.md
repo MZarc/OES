@@ -19,15 +19,6 @@
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT" /></a>
 </p>
 
-<p align="center">
-  <a href="#-key-features">Key Features</a> •
-  <a href="#-system-architecture">System Architecture</a> •
-  <a href="#-quick-start-local">Quick Start</a> •
-  <a href="#-free-cloud-deployment-supabase--vercel">Free Cloud Deployment</a> •
-  <a href="#-environment-configuration">Configuration</a> •
-  <a href="#-author--credits">Credits</a>
-</p>
-
 ---
 
 ## 🌟 Overview
