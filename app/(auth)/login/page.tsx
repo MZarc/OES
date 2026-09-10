@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, AlertCircle, Loader2, Clock } from 'lucide-react';
+import Link from 'next/link';
+import { Lock, Mail, AlertCircle, Loader2, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { checkSystemInitializedAction } from '@/app/actions/setup';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +14,8 @@ export default function LoginPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeoutNotice, setTimeoutNotice] = useState(false);
+  const [setupNotice, setSetupNotice] = useState(false);
+  const [uninitializedNotice, setUninitializedNotice] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -19,9 +23,19 @@ export default function LoginPage() {
       if (params.get('reason') === 'timeout') {
         setTimeoutNotice(true);
       }
+      if (params.get('setup') === 'complete') {
+        setSetupNotice(true);
+      }
       if (params.get('fresh') === '1' || params.get('logout') === '1') {
         fetch('/api/auth/sign-out', { method: 'POST' }).catch(() => {});
       }
+
+      // Check if system is uninitialized
+      checkSystemInitializedAction().then(({ initialized }) => {
+        if (!initialized) {
+          setUninitializedNotice(true);
+        }
+      }).catch(() => {});
     }
   }, []);
 
@@ -84,6 +98,34 @@ export default function LoginPage() {
             Overtime & Expense Management System
           </p>
         </div>
+
+        {uninitializedNotice && (
+          <div className="mb-6 p-3.5 bg-blue-50 text-blue-900 text-xs rounded-xl border border-blue-200 flex items-start gap-2.5 animate-slide-up">
+            <ShieldAlert className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-bold block">First-Time Setup Required</span>
+              <span className="text-blue-700">No administrator account exists yet. Initialize your root Super Admin account.</span>
+              <div className="mt-2">
+                <Link
+                  href="/setup"
+                  className="inline-flex items-center gap-1.5 font-bold text-blue-700 hover:text-blue-800 underline underline-offset-2 text-xs"
+                >
+                  Run Setup Wizard &rarr;
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {setupNotice && (
+          <div className="mb-6 flex items-center gap-2.5 p-3 bg-emerald-50 text-emerald-900 text-xs rounded-xl border border-emerald-200 animate-slide-up">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+            <div>
+              <span className="font-bold">Setup Completed: </span>
+              <span>System initialized successfully! Please sign in with your Super Administrator credentials.</span>
+            </div>
+          </div>
+        )}
 
         {timeoutNotice && (
           <div className="mb-6 flex items-center gap-2.5 p-3 bg-amber-50 text-amber-900 text-xs rounded-xl border border-amber-200 animate-slide-up">
@@ -159,40 +201,42 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 pt-5 border-t border-slate-100">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5 text-center">
-            One-Click Demo Credentials
+        {process.env.NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS === 'true' && (
+          <div className="mt-6 pt-5 border-t border-slate-100">
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5 text-center">
+              One-Click Demo Credentials
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { role: 'Super Admin', email: 'admin@oes.local', pass: 'Admin@123456', desc: 'Full System Access' },
+                { role: 'Meet Mistry', email: 'meet@oes.local', pass: 'Employee@123', desc: 'First Shift (7-15)' },
+                { role: 'John Wick', email: 'john.wick@oes.local', pass: 'Employee@123', desc: 'General Shift (8:30-17:15)' },
+                { role: 'Bruce Wayne', email: 'bruce.wayne@oes.local', pass: 'Employee@123', desc: 'Night Shift (23-07)' },
+              ].map((d) => {
+                const isSelected = email === d.email;
+                return (
+                  <button
+                    key={d.email}
+                    type="button"
+                    onClick={() => handleSelectDemo(d.email, d.pass)}
+                    className={`p-2.5 text-left rounded-xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-500/20'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800">{d.role}</span>
+                      {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />}
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate mt-0.5">{d.email}</div>
+                    <div className="text-[10px] text-slate-400 font-medium">{d.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { role: 'Super Admin', email: 'admin@oes.local', pass: 'Admin@123456', desc: 'Full System Access' },
-              { role: 'Meet Mistry', email: 'meet@oes.local', pass: 'Employee@123', desc: 'First Shift (7-15)' },
-              { role: 'John Wick', email: 'john.wick@oes.local', pass: 'Employee@123', desc: 'General Shift (8:30-17:15)' },
-              { role: 'Bruce Wayne', email: 'bruce.wayne@oes.local', pass: 'Employee@123', desc: 'Night Shift (23-07)' },
-            ].map((d) => {
-              const isSelected = email === d.email;
-              return (
-                <button
-                  key={d.email}
-                  type="button"
-                  onClick={() => handleSelectDemo(d.email, d.pass)}
-                  className={`p-2.5 text-left rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-500/20'
-                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800">{d.role}</span>
-                    {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />}
-                  </div>
-                  <div className="text-[10px] text-slate-500 truncate mt-0.5">{d.email}</div>
-                  <div className="text-[10px] text-slate-400 font-medium">{d.desc}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

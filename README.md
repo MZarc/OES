@@ -125,60 +125,93 @@ Whether deployed 24/7 on free-tier cloud infrastructure (Vercel + Supabase + Clo
 
 ---
 
-## 🚀 Free Cloud Deployment (Supabase + Vercel)
+## 🚀 Deployment & Operational Modes
 
-You can host OES **100% free with zero monthly server costs**:
+OES features a strict separation between **Sandbox/Development** and **Pristine Production**:
 
-### 1. Database Setup (Supabase PostgreSQL)
-1. Create a free project at [supabase.com](https://supabase.com).
-2. Go to **Project Settings > Database** and copy your **URI connection string** (Transaction / Session mode, port `5432` or `6543`).
-3. Set your password and append `?sslmode=require` to the string:
-   ```text
-   postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?sslmode=require
-   ```
-4. Push the schema and seed initial shifts from your local terminal:
-   ```bash
-   $env:DATABASE_URL="your_supabase_connection_string"
-   npm run db:push
-   npm run db:seed
-   ```
-
-### 2. Object Storage Setup (Cloudflare R2)
-1. In the [Cloudflare Dashboard](https://dash.cloudflare.com/), navigate to **R2** and create a bucket named `oes-receipts` (10 GB free monthly, zero egress fees).
-2. Create an **R2 API Token** with *Object Read & Write* permissions.
-3. Save your `Access Key ID`, `Secret Access Key`, and S3 API endpoint.
-
-### 3. Deploy to Vercel
-1. Fork or import this repository (`MZarc/OES`) into [Vercel](https://vercel.com).
-2. Configure the following environment variables:
-
-| Variable | Description | Example / Default |
+| Capability | 🛠️ Development / Sandbox | 🏢 Real-World Production |
 | :--- | :--- | :--- |
-| `NODE_ENV` | Environment state | `production` |
-| `NEXT_PUBLIC_APP_URL` | Public site domain | `https://oes-demo.vercel.app` |
-| `BETTER_AUTH_URL` | Auth domain | `https://oes-demo.vercel.app` |
-| `BETTER_AUTH_SECRET` | 32+ char secret string | `min_32_chars_random_string_here` |
-| `DATABASE_URL` | Supabase Postgres URL | `postgresql://...` |
-| `STORAGE_ENDPOINT` | Cloudflare R2 endpoint | `https://<account_id>.r2.cloudflarestorage.com` |
-| `STORAGE_REGION` | Storage region | `auto` |
-| `STORAGE_ACCESS_KEY` | R2 Access Key | `your_access_key` |
-| `STORAGE_SECRET_KEY` | R2 Secret Key | `your_secret_key` |
-| `STORAGE_BUCKET` | R2 Bucket Name | `oes-receipts` |
-| `SMTP_HOST` | SMTP Relay host | `smtp-relay.brevo.com` |
-| `SMTP_PORT` | SMTP port | `587` |
-| `SMTP_USER` | SMTP username | `your_brevo_account` |
-| `SMTP_PASS` | SMTP password | `your_smtp_key` |
-| `SMTP_FROM` | Outgoing sender | `OES Admin <notifications@yourdomain.com>` |
-
-3. Click **Deploy**. Vercel will build and launch your production instance with instant SSL.
+| **Database Seed** | `npm run db:seed` | `npm run db:fresh` |
+| **User Directory** | Demo staff (`meet@oes.local`, `john.wick@...`) | **0 users** (Pristine clean state) |
+| **Admin Setup** | Pre-seeded default admin | **Web Setup Wizard (`/setup`)** |
+| **Login Screen** | One-Click Demo Credentials grid | Clean corporate portal sign-in |
+| **Sample Data** | Dummy pending OT & receipts | Empty queues awaiting real staff |
 
 ---
 
-## 💻 Quick Start (Local Development)
+## 🏢 Production Deployment Guide (Supabase + Vercel)
 
-### Prerequisites
-* **Node.js**: v20.x or v22.x
-* **Docker Desktop** (optional, for local Postgres/MinIO/Valkey/Mailpit stack)
+Host OES **100% free with zero monthly server costs**:
+
+### Step 1: Database Provisioning (Supabase PostgreSQL)
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Navigate to **Project Settings** &rarr; **Database**.
+3. Under **Connection string**, select **URI** (Shared pooler, port `6543`, transaction mode).
+4. Append `?sslmode=require` to your connection string:
+   ```text
+   postgresql://postgres.[YOUR-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require
+   ```
+5. Push the schema and apply the clean production baseline from your local terminal:
+   ```powershell
+   $env:DATABASE_URL="your_supabase_connection_string_above"
+   npm run db:push
+   npm run db:fresh
+   ```
+   > 💡 `npm run db:fresh` ensures all company shift rules, 2026 holidays, and expense categories are initialized with **0 users**, ready for the root Super Admin wizard.
+
+### Step 2: Object Storage Setup (Cloudflare R2)
+1. In the [Cloudflare Dashboard](https://dash.cloudflare.com/), navigate to **R2** and create a bucket named `oes-receipts` (10 GB free monthly, zero egress fees).
+2. Create an **R2 API Token** with *Object Read & Write* permissions.
+3. Note your `Access Key ID`, `Secret Access Key`, and S3 API endpoint.
+
+### Step 3: Production Deployment on Vercel
+1. Import your repository (`MZarc/OES`) into [Vercel](https://vercel.com).
+2. Configure the following environment variables under **Settings** &rarr; **Environment Variables**:
+
+| Variable | Description | Example / Recommended |
+| :--- | :--- | :--- |
+| `NODE_ENV` | Environment state | `production` |
+| `NEXT_PUBLIC_APP_URL` | Public site domain | `https://oeslive.vercel.app` |
+| `BETTER_AUTH_URL` | Auth callback base URL | `https://oeslive.vercel.app` |
+| `BETTER_AUTH_SECRET` | 32+ char cryptographic secret | `openssl rand -base64 32` |
+| `DATABASE_URL` | Supabase pooled connection string | `postgresql://postgres.[ref]:[pass]@[host]:6543/postgres?sslmode=require` |
+| `STORAGE_ENDPOINT` | Cloudflare R2 S3 endpoint | `https://<account_id>.r2.cloudflarestorage.com` |
+| `STORAGE_REGION` | Storage region | `auto` |
+| `STORAGE_ACCESS_KEY` | R2 Access Key | `your_r2_access_key` |
+| `STORAGE_SECRET_KEY` | R2 Secret Key | `your_r2_secret_key` |
+| `STORAGE_BUCKET` | R2 Bucket Name | `oes-receipts` |
+| `SMTP_HOST` | Outgoing mail server | `smtp.gmail.com` or `smtp-relay.brevo.com` |
+| `SMTP_PORT` | SMTP port | `587` |
+| `SMTP_USER` | SMTP username | `your-email@gmail.com` |
+| `SMTP_PASS` | SMTP App Password (16-char for Gmail) | `your-app-password` |
+| `SMTP_FROM` | Sender identity | `OES System <noreply@yourdomain.com>` |
+
+3. Click **Deploy**. Vercel will install dependencies, compile all routes, and launch your instance with global CDN and SSL.
+
+---
+
+## 👑 First-Time System Bootstrapping (Setting Up Real Super Admin)
+
+Once deployed, OES provides an enterprise self-provisioning wizard:
+
+1. **Visit the Setup Wizard**:
+   Navigate to `https://your-domain.vercel.app/setup` (e.g. [https://oeslive.vercel.app/setup](https://oeslive.vercel.app/setup)).
+2. **Create Root Super Administrator**:
+   Enter your **Full Name**, **Work Email Address**, and a **Strong Master Password** (minimum 8 characters).
+3. **Permanent Lockout**:
+   Upon submission, your account is provisioned with `SUPER_ADMIN` privileges, email verification, and system profile. The `/setup` endpoint is **permanently locked down** against future requests.
+4. **Sign In**:
+   Sign in to your dashboard at `/login` with your new credentials.
+
+### Onboarding Real Employees
+From the **Super Admin Console**:
+* **Bulk Import**: Go to **Employees** &rarr; **Import** (`/admin/employees/import`) to drag-and-drop your company roster spreadsheet (`.xlsx`).
+* **Individual Invite**: Go to **Employees** &rarr; **Add Employee** (`/admin/employees`) to create a single profile.
+* **Activation Flow**: Employees receive an automated email invitation containing a secure 7-day single-use activation link (`/activate?token=...`) to set their own password.
+
+---
+
+## 💻 Local Sandbox Development
 
 ### 1. Clone & Install
 ```bash
@@ -193,25 +226,25 @@ Copy `.env.example` to `.env`:
 cp .env.example .env
 ```
 
-### 3. Start Local Infrastructure
-Using Docker Compose:
+### 3. Start Local Infrastructure Stack (Docker)
 ```bash
 docker compose -f docker/docker-compose.yml up -d
 ```
 * **PostgreSQL 17**: `localhost:5432`
 * **Valkey (Redis)**: `localhost:6379`
-* **MinIO Storage**: `localhost:9000` (Console: `9001`)
-* **Mailpit (Local SMTP Web UI)**: `localhost:1025` (Web UI: `8025`)
+* **MinIO S3 Storage**: `localhost:9000` (Web Console: `localhost:9001`)
+* **Mailpit (Local SMTP Web UI)**: `localhost:1025` (Web UI: `localhost:8025`)
 
-### 4. Push Schema & Seed
+### 4. Push Schema & Seed Sandbox Data
 ```bash
 npm run db:push
 npm run db:seed
 ```
+> 💡 `npm run db:seed` populates sample shifts, demo employees (`meet@oes.local`, `john.wick@oes.local`, `bruce.wayne@oes.local`), and test requests for rapid local UI verification.
 
-### 5. Launch with Automated Health Checks
-* **Development**: Run `launch.bat` (automatically waits for compilation before opening browser).
-* **Production**: Run `launch-prod.bat` (builds and runs optimized standalone server).
+### 5. Launch Application
+* **Development Server**: Run `launch.bat` or `npm run dev` (starts on `http://localhost:3000`).
+* **Background Worker**: Run `npm run worker` (processes asynchronous emails & notifications).
 
 ---
 
