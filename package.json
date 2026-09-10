@@ -16,6 +16,11 @@
     "db:seed": "tsx db/seed.ts",
     "worker": "tsx workers/index.ts"
   },
+  "overrides": {
+    "@better-auth/drizzle-adapter": {
+      "drizzle-orm": "$drizzle-orm"
+    }
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.717.0",
     "@aws-sdk/s3-request-presigner": "^3.717.0",
