@@ -1,14 +1,14 @@
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 
-const redisUrl = process.env.VALKEY_URL || 'redis://localhost:6379';
+const redisUrl = process.env.VALKEY_URL || process.env.REDIS_URL || 'redis://localhost:6379';
 
 export const redisConnection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
   lazyConnect: true,
   retryStrategy(times) {
     if (times > 3) {
-      // Don't loop endlessly if redis is offline in dev
+      // Don't loop endlessly if redis is offline
       return null;
     }
     return Math.min(times * 500, 2000);
@@ -16,11 +16,14 @@ export const redisConnection = new IORedis(redisUrl, {
 });
 
 redisConnection.on('error', (err) => {
-  // Silent in dev when Valkey isn't running yet
-  if (process.env.NODE_ENV === 'development') {
-    // console.debug('Valkey connection debug:', err.message);
+  // Keep silent during build or when Redis is not configured yet
+  if (
+    process.env.NODE_ENV === 'development' ||
+    (!process.env.VALKEY_URL && !process.env.REDIS_URL)
+  ) {
+    // Silent fallback
   } else {
-    console.error('Valkey connection error:', err);
+    console.error('Valkey/Redis connection error:', err.message);
   }
 });
 
