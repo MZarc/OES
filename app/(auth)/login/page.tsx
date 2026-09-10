@@ -30,10 +30,10 @@ export default function LoginPage() {
         fetch('/api/auth/sign-out', { method: 'POST' }).catch(() => {});
       }
 
-      // Check if system is uninitialized
+      // If system is uninitialized, immediately redirect to setup wizard
       checkSystemInitializedAction().then(({ initialized }) => {
         if (!initialized) {
-          setUninitializedNotice(true);
+          router.replace('/setup');
         }
       }).catch(() => {});
     }
