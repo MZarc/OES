@@ -16,6 +16,7 @@
   <a href="https://orm.drizzle.team"><img src="https://img.shields.io/badge/Drizzle_ORM-0.38-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black" alt="Drizzle ORM" /></a>
   <a href="https://www.postgresql.org"><img src="https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" /></a>
   <a href="https://vitest.dev"><img src="https://img.shields.io/badge/Vitest-2.1-FCC72B?style=for-the-badge&logo=vitest&logoColor=black" alt="Vitest" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT" /></a>
 </p>
 
 <p align="center">
@@ -77,42 +78,59 @@ Whether deployed 24/7 on free-tier cloud infrastructure (Vercel + Supabase + Clo
 
 ## 🏛 System Architecture
 
-```mermaid
-flowchart TD
-    subgraph Client ["Client Layer (PWA / Web)"]
-        Browser["Desktop & Mobile Browsers"]
-        PWA["Service Worker & Manifest"]
-    end
+<p align="center">
+  <img src="./public/architecture.svg" alt="OES System Architecture" width="100%" style="border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.12);" />
+</p>
 
-    subgraph AppServer ["Next.js 15 App Server (Node.js 22 / Edge)"]
-        AuthMiddleware["Better Auth Session Guard"]
-        ServerActions["Server Actions (Zod Validated)"]
-        RouteHandlers["API Route Handlers (/api/*)"]
-        OTEngine["Deterministic OT Calculator Engine"]
-    end
+<details>
+<summary><b>🔍 View ASCII / Unicode Architecture Flowchart (Terminal View)</b></summary>
+<br />
 
-    subgraph DataStorage ["Data & Storage Layer"]
-        Postgres[("PostgreSQL 17\n(Drizzle ORM)")]
-        RedisQueue[("Valkey / Redis\n(BullMQ)")]
-        ObjectStore[("Cloudflare R2 / MinIO\n(Dual Local Fallback)")]
-    end
-
-    subgraph External ["External Services"]
-        SMTPRelay["SMTP Relay (Brevo / Resend / Mailpit)"]
-    end
-
-    Browser --> AuthMiddleware
-    PWA --> Browser
-    AuthMiddleware --> ServerActions
-    AuthMiddleware --> RouteHandlers
-    ServerActions --> OTEngine
-    OTEngine --> Postgres
-    ServerActions --> Postgres
-    ServerActions --> ObjectStore
-    ServerActions --> RedisQueue
-    RedisQueue --> SMTPRelay
-    ServerActions -.->|Direct Fallback| SMTPRelay
+```text
+┌───────────────────────────────────────────────────────────────────────────┐
+│                       CLIENT LAYER (PWA & WEB APP)                        │
+│  ┌───────────────────────┐                    ┌────────────────────────┐  │
+│  │   Desktop & Mobile    │◄──────────────────►│   Progressive Web App  │  │
+│  │   Browser UI (React)  │                    │   (Offline Service Wkr)│  │
+│  └───────────┬───────────┘                    └───────────┬────────────┘  │
+└──────────────┼────────────────────────────────────────────┼───────────────┘
+               ▼                                            ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│              NEXT.JS 15 APPLICATION SERVER (NODE.JS / EDGE)               │
+│                                                                           │
+│   ┌───────────────────────────────────────────────────────────────────┐   │
+│   │               Better Auth Stateful Session Guard                  │   │
+│   └─────────────────────────────────┬─────────────────────────────────┘   │
+│                                     ▼                                     │
+│   ┌───────────────────────────────────────────────────────────────────┐   │
+│   │              Type-Safe Server Actions & REST Handlers             │   │
+│   └───────┬─────────────────────────┬─────────────────────────┬───────┘   │
+│           │                         │                         │           │
+│           ▼                         ▼                         ▼           │
+│   ┌───────────────┐         ┌───────────────┐         ┌───────────────┐   │
+│   │  OT Engine    │         │ Claim Verifier│         │ Roster Importer│  │
+│   │ (Deterministic│         │ (Anti-Fraud & │         │ (Excel Batch  │   │
+│   │  Calculations)│         │  Duplicates)  │         │  Conflicts)   │   │
+│   └───────┬───────┘         └───────┬───────┘         └───────┬───────┘   │
+└───────────┼─────────────────────────┼─────────────────────────┼───────────┘
+            ▼                         ▼                         ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                    DATA PERSISTENCE & SERVICES LAYER                      │
+│                                                                           │
+│   ┌─────────────────────┐   ┌─────────────────────┐   ┌───────────────┐   │
+│   │    PostgreSQL 17    │   │  Cloudflare R2 / S3 │   │ Valkey/Redis  │   │
+│   │ (Supabase / Local)  │   │  (Receipt Storage)  │   │ (BullMQ Queue)│   │
+│   └─────────────────────┘   └─────────────────────┘   └───────┬───────┘   │
+│                                                               │           │
+│                                                               ▼           │
+│                                                       ┌───────────────┐   │
+│                                                       │  SMTP Relay   │   │
+│                                                       │(Brevo/Resend) │   │
+│                                                       └───────────────┘   │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
+
+</details>
 
 ---
 
@@ -249,6 +267,11 @@ OES/
 
 ---
 
+## 📄 License
+This project is open-source software licensed under the **[MIT License](LICENSE)**.
+
+---
+
 ## 👨‍💻 Author & Credits
 
 * **Developed by**: **Meet Mistry**
@@ -260,5 +283,5 @@ OES/
 ---
 
 <p align="center">
-  <sub>Built with ❤️ for precision workforce engineering. Released under the MIT License.</sub>
+  <sub>Built with ❤️ for precision workforce engineering. Copyright © 2026 Meet Mistry.</sub>
 </p>

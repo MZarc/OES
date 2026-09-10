@@ -35,3 +35,7 @@ next-env.d.ts
 
 # User Uploads
 /public/uploads/
+
+# Agent & AI local kit
+.agent/
+.agent

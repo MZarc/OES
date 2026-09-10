@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 500" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="50%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#0b1120" />
+    </linearGradient>
+
+    <!-- Card Gradients -->
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95" />
+    </linearGradient>
+
+    <linearGradient id="accentBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#60a5fa" />
+    </linearGradient>
+
+    <linearGradient id="accentCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+
+    <linearGradient id="accentEmerald" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+
+    <linearGradient id="accentAmber" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#fbbf24" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+    .heading { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 700; fill: #ffffff; }
+    .subtext { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; fill: #94a3b8; }
+    .badge { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; font-weight: 600; }
+    .line { stroke: #334155; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .line-active { stroke: #38bdf8; stroke-width: 2; }
+  </style>
+
+  <!-- Outer Canvas Container -->
+  <rect width="880" height="500" rx="16" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="1.5" />
+
+  <!-- Grid Highlights / Subtle Circuit Lines -->
+  <circle cx="440" cy="18" r="160" fill="#2563eb" opacity="0.08" filter="url(#glow)" />
+  <circle cx="700" cy="400" r="140" fill="#06b6d4" opacity="0.06" filter="url(#glow)" />
+
+  <!-- ==================== LAYER 1: CLIENT ACCESS ==================== -->
+  <g transform="translate(30, 24)">
+    <text class="title" fill="#38bdf8">01. Presentation &amp; Client Access Layer</text>
+
+    <!-- Browser Card -->
+    <g transform="translate(0, 16)" filter="url(#shadow)">
+      <rect width="395" height="72" rx="10" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.2" />
+      <rect x="14" y="16" width="38" height="38" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2" />
+      <text x="33" y="41" text-anchor="middle" font-size="18">🌐</text>
+      <text x="64" y="34" class="heading">Responsive Web Application</text>
+      <text x="64" y="50" class="subtext">Next.js 15 • React 19 • Tailwind CSS • Micro-bundled (105 kB)</text>
+    </g>
+
+    <!-- PWA Card -->
+    <g transform="translate(425, 16)" filter="url(#shadow)">
+      <rect width="395" height="72" rx="10" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.2" />
+      <rect x="14" y="16" width="38" height="38" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="1.2" />
+      <text x="33" y="41" text-anchor="middle" font-size="18">📱</text>
+      <text x="64" y="34" class="heading">Progressive Web App (PWA)</text>
+      <text x="64" y="50" class="subtext">Standalone Mode • Workbox Caching • Offline Service Worker</text>
+    </g>
+  </g>
+
+  <!-- Flow Connector 1 to 2 -->
+  <path d="M 230 114 L 230 148" class="line-active" stroke="#38bdf8" />
+  <polygon points="227,146 230,152 233,146" fill="#38bdf8" />
+  <path d="M 650 114 L 650 148" class="line-active" stroke="#10b981" />
+  <polygon points="647,146 650,152 653,146" fill="#10b981" />
+
+  <!-- ==================== LAYER 2: NEXT.JS APP SERVER ==================== -->
+  <g transform="translate(30, 154)">
+    <text class="title" fill="#a855f7">02. Next.js 15 Application Server &amp; Compute Kernel</text>
+
+    <!-- Auth & Session Gate -->
+    <g transform="translate(0, 16)" filter="url(#shadow)">
+      <rect width="820" height="54" rx="10" fill="url(#cardGrad)" stroke="#6366f1" stroke-width="1.2" />
+      <text x="20" y="33" text-anchor="start" font-size="16">🛡️</text>
+      <text x="48" y="28" class="heading">Better Auth &amp; Server-Side Session Shield</text>
+      <text x="48" y="44" class="subtext">Role Verification (Admin / Employee) • 10h Sliding Session • Instant Invalidation on Deactivation</text>
+      <rect x="685" y="14" width="120" height="26" rx="6" fill="#312e81" stroke="#4f46e5" stroke-width="1" />
+      <text x="745" y="31" text-anchor="middle" class="badge" fill="#a5b4fc">FORCE-DYNAMIC</text>
+    </g>
+
+    <!-- 3 Core Engines -->
+    <g transform="translate(0, 80)">
+      <!-- Engine 1: OT Engine -->
+      <g transform="translate(0, 0)" filter="url(#shadow)">
+        <rect width="262" height="92" rx="10" fill="url(#cardGrad)" stroke="#38bdf8" stroke-width="1.2" />
+        <text x="16" y="26" class="heading" fill="#38bdf8">🕒 OT Calculation Kernel</text>
+        <text x="16" y="44" class="subtext">• Dynamic Start-Time Detection</text>
+        <text x="16" y="59" class="subtext">• Configurable Rounding Polices</text>
+        <text x="16" y="74" class="subtext">• Immutable Snapshot Signatures</text>
+      </g>
+
+      <!-- Engine 2: Expense Suite -->
+      <g transform="translate(279, 0)" filter="url(#shadow)">
+        <rect width="262" height="92" rx="10" fill="url(#cardGrad)" stroke="#f59e0b" stroke-width="1.2" />
+        <text x="16" y="26" class="heading" fill="#fbbf24">💳 Expense &amp; Anti-Fraud</text>
+        <text x="16" y="44" class="subtext">• Multi-Proof Image Uploads</text>
+        <text x="16" y="59" class="subtext">• Heuristic Duplicate Scanner</text>
+        <text x="16" y="74" class="subtext">• Sanitized Print Verification</text>
+      </g>
+
+      <!-- Engine 3: Roster Importer -->
+      <g transform="translate(558, 0)" filter="url(#shadow)">
+        <rect width="262" height="92" rx="10" fill="url(#cardGrad)" stroke="#10b981" stroke-width="1.2" />
+        <text x="16" y="26" class="heading" fill="#34d399">👥 Roster Automation</text>
+        <text x="16" y="44" class="subtext">• Excel (.xlsx) Batch Importer</text>
+        <text x="16" y="59" class="subtext">• Conflict Resolution Engine</text>
+        <text x="16" y="74" class="subtext">• Secure Activation Tokens</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Connectors from Layer 2 to Layer 3 -->
+  <path d="M 130 338 L 130 366" class="line-active" stroke="#38bdf8" />
+  <polygon points="127,364 130,370 133,364" fill="#38bdf8" />
+
+  <path d="M 410 338 L 410 366" class="line-active" stroke="#fbbf24" />
+  <polygon points="407,364 410,370 413,364" fill="#fbbf24" />
+
+  <path d="M 690 338 L 690 366" class="line-active" stroke="#34d399" />
+  <polygon points="687,364 690,370 693,364" fill="#34d399" />
+
+  <!-- ==================== LAYER 3: STORAGE & PERSISTENCE ==================== -->
+  <g transform="translate(30, 370)">
+    <text class="title" fill="#10b981">03. Persistence, Object Storage &amp; Background Queues</text>
+
+    <!-- Database Card -->
+    <g transform="translate(0, 16)" filter="url(#shadow)">
+      <rect width="262" height="78" rx="10" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.2" />
+      <text x="16" y="24" font-size="16">🐘</text>
+      <text x="44" y="24" class="heading">PostgreSQL 17 Database</text>
+      <text x="16" y="44" class="subtext">Drizzle ORM • Indexed Schemas</text>
+      <text x="16" y="60" class="subtext">Supabase Cloud or Local Docker</text>
+    </g>
+
+    <!-- Storage Card -->
+    <g transform="translate(279, 16)" filter="url(#shadow)">
+      <rect width="262" height="78" rx="10" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.2" />
+      <text x="16" y="24" font-size="16">🪣</text>
+      <text x="44" y="24" class="heading">Object Storage (S3)</text>
+      <text x="16" y="44" class="subtext">Cloudflare R2 (10GB Free, $0 Egress)</text>
+      <text x="16" y="60" class="subtext">MinIO &amp; Local Dual-Layer Fallback</text>
+    </g>
+
+    <!-- Queue & Mail Card -->
+    <g transform="translate(558, 16)" filter="url(#shadow)">
+      <rect width="262" height="78" rx="10" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.2" />
+      <text x="16" y="24" font-size="16">⚡</text>
+      <text x="44" y="24" class="heading">Valkey Queue &amp; SMTP</text>
+      <text x="16" y="44" class="subtext">BullMQ Worker Threads (Redis)</text>
+      <text x="16" y="60" class="subtext">Brevo / Resend / Direct Mail Fallback</text>
+    </g>
+  </g>
+</svg>
