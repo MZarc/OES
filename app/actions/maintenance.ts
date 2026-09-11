@@ -40,7 +40,9 @@ export async function getControlCenterOTAction(params?: {
   const limit = Math.min(100, Math.max(1, params?.limit || 20));
   const offset = (page - 1) * limit;
 
-  const conditions = [];
+  const conditions = [
+    sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
+  ];
 
   if (params?.fromDate) {
     conditions.push(gte(otRecords.workDate, params.fromDate));
@@ -115,7 +117,9 @@ export async function getControlCenterExpensesAction(params?: {
   const limit = Math.min(100, Math.max(1, params?.limit || 20));
   const offset = (page - 1) * limit;
 
-  const conditions = [];
+  const conditions = [
+    sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
+  ];
 
   if (params?.fromDate) {
     conditions.push(gte(expenses.expenseDate, params.fromDate));

@@ -80,7 +80,10 @@ export async function getReportsSummaryAction(params?: {
     })
     .from(employeeProfiles)
     .innerJoin(shifts, eq(employeeProfiles.shiftId, shifts.id))
-    .where(not(eq(employeeProfiles.status, 'DELETED')));
+    .where(and(
+      not(eq(employeeProfiles.status, 'DELETED')),
+      sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`
+    ));
 
   const search = params?.search?.toLowerCase().trim();
   const searchedEmployees = search
@@ -258,6 +261,7 @@ export async function exportOTReportAction(fromDate?: string, toDate?: string, s
     gte(otRecords.workDate, fDate),
     lte(otRecords.workDate, tDate),
     not(eq(employeeProfiles.status, 'DELETED')),
+    sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
   ];
 
   const list = await db
@@ -300,6 +304,7 @@ export async function exportExpenseReportAction(fromDate?: string, toDate?: stri
     gte(expenses.expenseDate, fDate),
     lte(expenses.expenseDate, tDate),
     not(eq(employeeProfiles.status, 'DELETED')),
+    sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
   ];
 
   const list = await db

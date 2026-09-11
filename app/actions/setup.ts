@@ -111,9 +111,26 @@ export async function initializeSuperAdminAction(formData: {
 export async function ensureDemoAccountAction(): Promise<{ success: boolean; error?: string }> {
   try {
     const demoEmail = 'demo@oes.com';
+
+    // Fast path: check if demo user already exists and has a credential account
+    const demoUser = await db.query.users.findFirst({
+      where: eq(users.email, demoEmail),
+    });
+
+    if (demoUser) {
+      const existingAcc = await db.query.accounts.findFirst({
+        where: eq(accounts.userId, demoUser.id),
+      });
+      if (existingAcc) {
+        // Demo account fully provisioned — skip all setup
+        return { success: true };
+      }
+    }
+
+    // Cold path: first-time demo setup (runs once per database lifecycle)
     const hashedPassword = await hashPassword('demo123456');
 
-    // 1. Ensure all shifts exist
+    // Batch: ensure shifts exist
     const initialShifts = [
       { id: 'shift_first_v1', code: 'FIRST', name: 'First Shift', startTime: '07:00', endTime: '15:00', regularOtStartTime: '15:00', crossesMidnight: false, version: '2026-v1', active: true },
       { id: 'shift_general_v1', code: 'GENERAL', name: 'General Shift', startTime: '08:30', endTime: '17:15', regularOtStartTime: '17:30', crossesMidnight: false, version: '2026-v1', active: true },
@@ -124,81 +141,52 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
       await db.insert(shifts).values(s).onConflictDoNothing();
     }
 
-    // 2. Ensure default OT Rules exist
+    // OT Rules
     await db.insert(otRules).values({
-      id: 'ot_rule_2026_v1',
-      version: '2026-v1',
-      weekdayMultiplier: 1.0,
-      sundayMultiplier: 1.25,
-      holidayMultiplier: 1.25,
-      roundingPolicy: 'UP_TO_NEXT_1_HOUR',
-      timezone: 'Asia/Kolkata',
-      minOtMinutes: 0,
-      isCurrent: true,
+      id: 'ot_rule_2026_v1', version: '2026-v1', weekdayMultiplier: 1.0, sundayMultiplier: 1.25,
+      holidayMultiplier: 1.25, roundingPolicy: 'UP_TO_NEXT_1_HOUR', timezone: 'Asia/Kolkata', minOtMinutes: 0, isCurrent: true,
     }).onConflictDoNothing();
 
-    // 3. Ensure Expense Categories exist
+    // Expense Categories
     const categories = ['Travel', 'Food', 'Accommodation', 'Transport', 'Office Supplies', 'Communication', 'Medical', 'Other'];
     for (const cat of categories) {
       await db.insert(expenseCategories).values({
-        id: `cat_${cat.toLowerCase().replace(/\s+/g, '_')}`,
-        name: cat,
-        description: `Expenses relating to ${cat}`,
-        active: true,
+        id: `cat_${cat.toLowerCase().replace(/\s+/g, '_')}`, name: cat,
+        description: `Expenses relating to ${cat}`, active: true,
       }).onConflictDoNothing();
     }
 
-    // 4. Ensure demo@oes.com user exists with SUPER_ADMIN role
-    let demoUser = await db.query.users.findFirst({
-      where: eq(users.email, demoEmail),
-    });
-
-    let demoUserId: string;
-
+    // User
+    const demoUserId = demoUser?.id || 'usr_demo_sandbox';
     if (!demoUser) {
-      demoUserId = 'usr_demo_sandbox';
-      await db.delete(users).where(eq(users.id, demoUserId));
       await db.insert(users).values({
-        id: demoUserId,
-        name: 'Demo Sandbox User',
-        email: demoEmail,
-        emailVerified: true,
-        role: 'SUPER_ADMIN',
-      });
+        id: demoUserId, name: 'Demo Sandbox User', email: demoEmail,
+        emailVerified: true, role: 'SUPER_ADMIN',
+      }).onConflictDoNothing();
     } else {
-      demoUserId = demoUser.id;
-      await db.update(users).set({ role: 'SUPER_ADMIN', name: 'Demo Sandbox User', emailVerified: true }).where(eq(users.id, demoUserId));
+      await db.update(users).set({ role: 'SUPER_ADMIN', emailVerified: true }).where(eq(users.id, demoUserId));
     }
 
-    // 5. Ensure credential account exists with password demo123456
-    await db.delete(accounts).where(eq(accounts.userId, demoUserId));
-    await db.insert(accounts).values({
-      id: `acc_demo_${crypto.randomUUID()}`,
-      userId: demoUserId,
-      accountId: demoUserId,
-      providerId: 'credential',
-      password: hashedPassword,
+    // Account — upsert, never delete existing
+    const existingAcc = await db.query.accounts.findFirst({
+      where: eq(accounts.userId, demoUserId),
     });
-
-    // 6. Ensure base employee profile DEMO001 exists
-    const existingEmp = await db.query.employeeProfiles.findFirst({
-      where: eq(employeeProfiles.userId, demoUserId),
-    });
-
-    if (!existingEmp) {
-      await db.insert(employeeProfiles).values({
-        id: 'emp_demo_sandbox',
-        userId: demoUserId,
-        employeeCode: 'DEMO001',
-        fullName: 'Demo Sandbox User',
-        email: demoEmail,
-        department: 'Engineering',
-        designation: 'Demo Admin & Employee',
-        shiftId: 'shift_general_v1',
-        status: 'ACTIVE',
-        dateJoined: '2026-01-01',
+    if (existingAcc) {
+      await db.update(accounts).set({ password: hashedPassword }).where(eq(accounts.id, existingAcc.id));
+    } else {
+      await db.insert(accounts).values({
+        id: `acc_demo_sandbox`, userId: demoUserId, accountId: demoUserId,
+        providerId: 'credential', password: hashedPassword,
       }).onConflictDoNothing();
     }
+
+    // Employee profile
+    await db.insert(employeeProfiles).values({
+      id: 'emp_demo_sandbox', userId: demoUserId, employeeCode: 'DEMO001',
+      fullName: 'Demo Sandbox User', email: demoEmail, department: 'Engineering',
+      designation: 'Demo Admin & Employee', shiftId: 'shift_general_v1',
+      status: 'ACTIVE', dateJoined: '2026-01-01',
+    }).onConflictDoNothing();
 
     return { success: true };
   } catch (error: any) {
@@ -206,3 +194,4 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
     return { success: false, error: error.message || 'Failed to prepare demo account.' };
   }
 }
+

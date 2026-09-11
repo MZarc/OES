@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Mail, AlertCircle, Loader2, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
-import { checkSystemInitializedAction, ensureDemoAccountAction } from '@/app/actions/setup';
+import { ensureDemoAccountAction } from '@/app/actions/setup';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,13 +27,6 @@ export default function LoginPage() {
       if (params.get('fresh') === '1' || params.get('logout') === '1') {
         fetch('/api/auth/sign-out', { method: 'POST' }).catch(() => {});
       }
-
-      // If system is uninitialized, immediately redirect to setup wizard
-      checkSystemInitializedAction().then(({ initialized }) => {
-        if (!initialized) {
-          router.replace('/setup');
-        }
-      }).catch(() => {});
     }
   }, []);
 

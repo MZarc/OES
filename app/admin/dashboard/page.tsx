@@ -2,6 +2,7 @@ import { getCurrentSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { employeeProfiles, otRecords, expenses } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { isDemoEmail } from '@/lib/auth/demo-sandbox';
 import { Navbar } from '@/components/shared/Navbar';
 import Link from 'next/link';
 import { Users, Clock, Receipt, FileText, CheckCircle2 } from 'lucide-react';
@@ -11,21 +12,33 @@ export default async function AdminDashboardPage() {
   const session = await getCurrentSession();
   const userName = session?.user?.name || 'Administrator';
   const currentMonth = new Date().toISOString().substring(0, 7);
+  const isDemo = isDemoEmail(session?.user?.email);
+  const sessionId = session?.session?.id;
 
   // High-performance SQL aggregates for heavy datasets (PRD Section 27)
+  const demoExcludeEmp = sql`"id" NOT LIKE 'emp_demo_%' AND "id" NOT LIKE 'emp_001_%' AND "id" NOT LIKE 'emp_002_%' AND "id" NOT LIKE 'emp_003_%'`;
+  const demoScopeEmp = sessionId ? sql`"id" LIKE ${'%_' + sessionId}` : sql`1=0`;
+
   const [empCount] = await db
     .select({ count: sql<number>`count(*)::int` })
-    .from(employeeProfiles);
+    .from(employeeProfiles)
+    .where(isDemo ? demoScopeEmp : demoExcludeEmp);
+
+  const demoExcludeOt = sql`"employee_id" NOT LIKE 'emp_demo_%' AND "employee_id" NOT LIKE 'emp_001_%' AND "employee_id" NOT LIKE 'emp_002_%' AND "employee_id" NOT LIKE 'emp_003_%'`;
+  const demoScopeOt = sessionId ? sql`"employee_id" LIKE ${'%_' + sessionId}` : sql`1=0`;
 
   const [pendingOt] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(otRecords)
-    .where(eq(otRecords.status, 'SUBMITTED'));
+    .where(sql`${otRecords.status} = 'SUBMITTED' AND (${isDemo ? demoScopeOt : demoExcludeOt})`);
+
+  const demoExcludeExp = sql`"employee_id" NOT LIKE 'emp_demo_%' AND "employee_id" NOT LIKE 'emp_001_%' AND "employee_id" NOT LIKE 'emp_002_%' AND "employee_id" NOT LIKE 'emp_003_%'`;
+  const demoScopeExp = sessionId ? sql`"employee_id" LIKE ${'%_' + sessionId}` : sql`1=0`;
 
   const [pendingExp] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(expenses)
-    .where(eq(expenses.status, 'SUBMITTED'));
+    .where(sql`${expenses.status} = 'SUBMITTED' AND (${isDemo ? demoScopeExp : demoExcludeExp})`);
 
   const [monthOt] = await db
     .select({
@@ -33,7 +46,7 @@ export default async function AdminDashboardPage() {
     })
     .from(otRecords)
     .where(
-      sql`${otRecords.status} = 'APPROVED' AND ${otRecords.workDate} LIKE ${currentMonth + '%'}`
+      sql`${otRecords.status} = 'APPROVED' AND ${otRecords.workDate} LIKE ${currentMonth + '%'} AND (${isDemo ? demoScopeOt : demoExcludeOt})`
     );
 
   const [monthExp] = await db
@@ -42,7 +55,7 @@ export default async function AdminDashboardPage() {
     })
     .from(expenses)
     .where(
-      sql`${expenses.status} = 'APPROVED' AND ${expenses.expenseDate} LIKE ${currentMonth + '%'}`
+      sql`${expenses.status} = 'APPROVED' AND ${expenses.expenseDate} LIKE ${currentMonth + '%'} AND (${isDemo ? demoScopeExp : demoExcludeExp})`
     );
 
   const totalEmployees = empCount?.count || 0;
