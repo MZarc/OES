@@ -151,7 +151,33 @@ export async function saveSmtpConfigAction(config: {
 }
 
 export async function getMailSystemStatusAction(): Promise<MailSystemStatus> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+
+  if (isDemo) {
+    return {
+      smtp: {
+        host: 'sandbox.smtp.mailtrap.io',
+        port: 587,
+        user: 'demo_mailer@oes.local',
+        from: 'OES Demo Sandbox <notifications@oes.demo>',
+        userConfigured: true,
+        hasSavedPassword: true,
+        connected: true,
+      },
+      valkeyQueue: {
+        host: 'localhost (sandbox-local)',
+        port: 6379,
+        connected: true,
+        activeCount: 0,
+        completedCount: 14,
+        failedCount: 0,
+      },
+      tokens: {
+        totalActive: 3,
+      },
+    };
+  }
 
   await emailService.ensureConfigLoaded();
   const cfg = emailService.getConfig();
@@ -232,10 +258,18 @@ export async function getMailSystemStatusAction(): Promise<MailSystemStatus> {
 }
 
 export async function sendTestEmailAction(toEmail: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   if (!toEmail || !toEmail.includes('@')) {
     throw new Error('Valid email address required.');
+  }
+
+  if (admin.user.email === 'demo@oes.com') {
+    return {
+      success: true,
+      messageId: `<demo-sandbox-${crypto.randomUUID()}@oes.local>`,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   const testSubject = `OES System Test Email - ${new Date().toLocaleTimeString()}`;
@@ -263,7 +297,41 @@ export async function sendTestEmailAction(toEmail: string) {
 }
 
 export async function getActiveVerificationTokensAction() {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+
+  if (isDemo) {
+    const safeSession = admin.session?.id?.slice(-4).toUpperCase() || 'DEMO';
+    return [
+      {
+        id: `tok_demo_1_${admin.session?.id || 'demo'}`,
+        identifier: `meet_${admin.session?.id || 'demo'}@oes.local`,
+        value: 'demo_invite_token_meet_sandbox',
+        expiresAt: new Date(Date.now() + 86400000 * 2),
+        createdAt: new Date(Date.now() - 3600000),
+        employeeName: 'Meet Mistry',
+        employeeCode: `EMP1_${safeSession}`,
+      },
+      {
+        id: `tok_demo_2_${admin.session?.id || 'demo'}`,
+        identifier: `john_${admin.session?.id || 'demo'}@oes.local`,
+        value: 'demo_invite_token_john_sandbox',
+        expiresAt: new Date(Date.now() + 86400000 * 2),
+        createdAt: new Date(Date.now() - 7200000),
+        employeeName: 'John Wick',
+        employeeCode: `EMP2_${safeSession}`,
+      },
+      {
+        id: `tok_demo_3_${admin.session?.id || 'demo'}`,
+        identifier: `bruce_${admin.session?.id || 'demo'}@oes.local`,
+        value: 'demo_invite_token_bruce_sandbox',
+        expiresAt: new Date(Date.now() + 86400000 * 2),
+        createdAt: new Date(Date.now() - 10800000),
+        employeeName: 'Bruce Wayne',
+        employeeCode: `EMP3_${safeSession}`,
+      },
+    ];
+  }
 
   return db
     .select({
@@ -277,12 +345,22 @@ export async function getActiveVerificationTokensAction() {
     })
     .from(verificationTokens)
     .leftJoin(employeeProfiles, eq(employeeProfiles.email, verificationTokens.identifier))
+    .where(and(
+      gte(verificationTokens.expiresAt, new Date()),
+      sql`${verificationTokens.identifier} NOT LIKE '%@oes.local' AND ${verificationTokens.identifier} NOT LIKE 'demo%'`
+    ))
     .orderBy(desc(verificationTokens.createdAt))
     .limit(30);
 }
 
 export async function resendTokenEmailAction(tokenId: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+
+  if (admin.user.email === 'demo@oes.com') {
+    const baseUrl = getAppBaseUrl();
+    const activationUrl = `${baseUrl}/activate?email=meet_demo@oes.local&token=demo_simulated_token`;
+    return { success: true, activationUrl, email: 'meet_demo@oes.local' };
+  }
 
   await emailService.ensureConfigLoaded();
 
@@ -315,7 +393,15 @@ export async function resendTokenEmailAction(tokenId: string) {
 }
 
 export async function getActivationLinkAction(tokenId: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+
+  if (admin.user.email === 'demo@oes.com') {
+    const baseUrl = getAppBaseUrl();
+    return {
+      activationUrl: `${baseUrl}/activate?email=meet_demo@oes.local&token=demo_simulated_token`,
+      email: 'meet_demo@oes.local',
+    };
+  }
 
   const [tok] = await db
     .select()
@@ -363,7 +449,13 @@ export async function getRegistrationStatusAction(): Promise<{
   pending: PendingEmployeeItem[];
   done: DoneEmployeeItem[];
 }> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
+
+  const demoFilter = isDemo && sessionId
+    ? sql`${employeeProfiles.id} LIKE ${'%_' + sessionId}`
+    : sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`;
 
   // 1. Fetch all employees with shift information and userId
   const allEmployees = await db
@@ -382,6 +474,7 @@ export async function getRegistrationStatusAction(): Promise<{
     })
     .from(employeeProfiles)
     .leftJoin(shifts, eq(shifts.id, employeeProfiles.shiftId))
+    .where(demoFilter)
     .orderBy(desc(employeeProfiles.createdAt));
 
   // 2. Fetch active verification tokens

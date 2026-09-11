@@ -27,13 +27,26 @@ export async function getAuditLogsPaginatedAction(params?: {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
 
   const page = Math.max(1, params?.page || 1);
   const limit = Math.min(100, Math.max(1, params?.limit || 20));
   const offset = (page - 1) * limit;
 
   const conditions = [];
+
+  // Bidirectional Demo Isolation
+  if (isDemo && sessionId) {
+    conditions.push(
+      sql`(${auditLogs.entityId} LIKE ${'%_' + sessionId} OR ${auditLogs.actorUserId} = 'usr_demo_sandbox')`
+    );
+  } else if (!isDemo) {
+    conditions.push(
+      sql`(${auditLogs.actorUserId} IS NULL OR ${auditLogs.actorUserId} != 'usr_demo_sandbox') AND ${auditLogs.entityId} NOT LIKE '%demo%'`
+    );
+  }
 
   if (params?.action && params.action !== 'ALL') {
     conditions.push(eq(auditLogs.action, params.action));

@@ -51,7 +51,9 @@ export async function getReportsSummaryAction(params?: {
   sortOrder?: 'asc' | 'desc';
   onlyActiveUsers?: boolean;
 }): Promise<ReportsSummaryResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
 
   // Determine date bounds
   let fromDate = params?.fromDate;
@@ -69,6 +71,10 @@ export async function getReportsSummaryAction(params?: {
   const page = Math.max(1, params?.page || 1);
   const limit = Math.min(100, Math.max(1, params?.limit || 15));
 
+  const demoFilter = isDemo && sessionId
+    ? sql`${employeeProfiles.id} LIKE ${'%_' + sessionId}`
+    : sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`;
+
   const allEmployees = await db
     .select({
       id: employeeProfiles.id,
@@ -82,7 +88,7 @@ export async function getReportsSummaryAction(params?: {
     .innerJoin(shifts, eq(employeeProfiles.shiftId, shifts.id))
     .where(and(
       not(eq(employeeProfiles.status, 'DELETED')),
-      sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`
+      demoFilter
     ));
 
   const search = params?.search?.toLowerCase().trim();
@@ -252,16 +258,22 @@ export async function exportReportsAction(fromDate?: string, toDate?: string, se
 }
 
 export async function exportOTReportAction(fromDate?: string, toDate?: string, search?: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
 
   let fDate = fromDate || `${new Date().toISOString().substring(0, 7)}-01`;
   let tDate = toDate || new Date().toISOString().split('T')[0];
+
+  const demoFilter = isDemo && sessionId
+    ? sql`${employeeProfiles.id} LIKE ${'%_' + sessionId}`
+    : sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`;
 
   const conditions = [
     gte(otRecords.workDate, fDate),
     lte(otRecords.workDate, tDate),
     not(eq(employeeProfiles.status, 'DELETED')),
-    sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
+    demoFilter,
   ];
 
   const list = await db
@@ -295,16 +307,22 @@ export async function exportOTReportAction(fromDate?: string, toDate?: string, s
 }
 
 export async function exportExpenseReportAction(fromDate?: string, toDate?: string, search?: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
 
   let fDate = fromDate || `${new Date().toISOString().substring(0, 7)}-01`;
   let tDate = toDate || new Date().toISOString().split('T')[0];
+
+  const demoFilter = isDemo && sessionId
+    ? sql`${employeeProfiles.id} LIKE ${'%_' + sessionId}`
+    : sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`;
 
   const conditions = [
     gte(expenses.expenseDate, fDate),
     lte(expenses.expenseDate, tDate),
     not(eq(employeeProfiles.status, 'DELETED')),
-    sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
+    demoFilter,
   ];
 
   const list = await db

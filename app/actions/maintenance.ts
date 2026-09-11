@@ -2,13 +2,23 @@
 
 import { db } from '@/db/client';
 import { otRecords, expenses, expenseAttachments, employeeProfiles, auditLogs, imports, importRows } from '@/db/schema';
-import { eq, and, sql, inArray, gte, lte, desc, asc } from 'drizzle-orm';
+import { eq, and, sql, inArray, gte, lte, desc, asc, like } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth/session';
 import { auth } from '@/lib/auth';
 import { deleteAttachment } from '@/lib/storage';
 import { logAuditEvent } from '@/lib/audit';
 
 async function verifyAdminPassword(email: string, password?: string) {
+  if (email === 'demo@oes.com') {
+    if (!password || !password.trim()) {
+      throw new Error('Enter password ("demo123456") to confirm sandbox action.');
+    }
+    if (password.trim() !== 'demo123456') {
+      throw new Error('Invalid demo password. Please use "demo123456".');
+    }
+    return;
+  }
+
   if (!password || !password.trim()) {
     throw new Error('Admin password is required to confirm this permanent hard delete action.');
   }
@@ -34,14 +44,18 @@ export async function getControlCenterOTAction(params?: {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
 
   const page = Math.max(1, params?.page || 1);
   const limit = Math.min(100, Math.max(1, params?.limit || 20));
   const offset = (page - 1) * limit;
 
   const conditions = [
-    sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
+    isDemo && sessionId
+      ? sql`${employeeProfiles.id} LIKE ${'%_' + sessionId}`
+      : sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
   ];
 
   if (params?.fromDate) {
@@ -111,14 +125,18 @@ export async function getControlCenterExpensesAction(params?: {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
 
   const page = Math.max(1, params?.page || 1);
   const limit = Math.min(100, Math.max(1, params?.limit || 20));
   const offset = (page - 1) * limit;
 
   const conditions = [
-    sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
+    isDemo && sessionId
+      ? sql`${employeeProfiles.id} LIKE ${'%_' + sessionId}`
+      : sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`,
   ];
 
   if (params?.fromDate) {
@@ -199,15 +217,21 @@ export async function getControlCenterExpensesAction(params?: {
 
 export async function hardDeleteOTRecordsAction(recordIds: string[], adminPassword?: string) {
   const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
   await verifyAdminPassword(admin.user.email, adminPassword);
 
   if (!recordIds || recordIds.length === 0) {
     throw new Error('No OT records selected for deletion.');
   }
 
+  const deleteCondition = isDemo && sessionId
+    ? and(inArray(otRecords.id, recordIds), like(otRecords.employeeId, '%_' + sessionId))
+    : inArray(otRecords.id, recordIds);
+
   const deleted = await db
     .delete(otRecords)
-    .where(inArray(otRecords.id, recordIds))
+    .where(deleteCondition)
     .returning({ id: otRecords.id });
 
   await logAuditEvent({
@@ -223,11 +247,17 @@ export async function hardDeleteOTRecordsAction(recordIds: string[], adminPasswo
 
 export async function hardDeleteExpenseRecordsAction(expenseIds: string[], adminPassword?: string) {
   const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
+  const sessionId = admin.session?.id;
   await verifyAdminPassword(admin.user.email, adminPassword);
 
   if (!expenseIds || expenseIds.length === 0) {
     throw new Error('No expense records selected for deletion.');
   }
+
+  const deleteCondition = isDemo && sessionId
+    ? and(inArray(expenses.id, expenseIds), like(expenses.employeeId, '%_' + sessionId))
+    : inArray(expenses.id, expenseIds);
 
   // Fetch linked attachment storage keys
   const attachments = await db

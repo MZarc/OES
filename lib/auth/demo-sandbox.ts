@@ -1,5 +1,5 @@
 import { db } from '@/db/client';
-import { users, accounts, employeeProfiles, shifts, otRules, expenseCategories, otRecords, expenses } from '@/db/schema';
+import { users, accounts, employeeProfiles, shifts, otRules, expenseCategories, otRecords, expenses, auditLogs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export function isDemoEmail(email?: string | null): boolean {
@@ -54,6 +54,68 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
           calculatedAt: new Date().toISOString(),
         }),
       }).where(eq(otRecords.id, `ot_demo_3_${sessionId}`));
+
+      // Auto-seed audit logs for existing session if not present
+      const auditEntries = [
+        {
+          id: `log_demo_1_${sessionId}`,
+          actorUserId: 'usr_demo_sandbox',
+          action: 'SYSTEM_BOOTSTRAP',
+          entityType: 'SYSTEM',
+          entityId: `SYS_${sessionId}`,
+          afterData: JSON.stringify({ policyVersion: '2026-v1', engine: 'Deterministic-OT-v1', mode: 'SANDBOX_ISOLATED' }),
+          ipAddress: '127.0.0.1 (Sandbox)',
+          userAgent: 'OES Deterministic Sandbox Engine',
+          timestamp: new Date(Date.now() - 3 * 86400000),
+        },
+        {
+          id: `log_demo_2_${sessionId}`,
+          actorUserId: 'usr_demo_sandbox',
+          action: 'EMPLOYEE_ACTIVATED',
+          entityType: 'EMPLOYEE',
+          entityId: `emp_001_${sessionId}`,
+          afterData: JSON.stringify({ fullName: 'Meet Mistry', designation: 'Senior Engineer', department: 'Engineering' }),
+          ipAddress: '127.0.0.1 (Sandbox)',
+          userAgent: 'OES Deterministic Sandbox Engine',
+          timestamp: new Date(Date.now() - 2 * 86400000),
+        },
+        {
+          id: `log_demo_3_${sessionId}`,
+          actorUserId: 'usr_demo_sandbox',
+          action: 'OT_APPROVED',
+          entityType: 'OT_RECORD',
+          entityId: `ot_demo_2_${sessionId}`,
+          afterData: JSON.stringify({ payableHours: 4.0, approver: 'Demo Sandbox User', status: 'APPROVED' }),
+          ipAddress: '127.0.0.1 (Sandbox)',
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Demo/1.0',
+          timestamp: new Date(Date.now() - 86400000),
+        },
+        {
+          id: `log_demo_4_${sessionId}`,
+          actorUserId: 'usr_demo_sandbox',
+          action: 'EXPENSE_APPROVED',
+          entityType: 'EXPENSE',
+          entityId: `exp_demo_2_${sessionId}`,
+          afterData: JSON.stringify({ amount: 680, category: 'Food', approver: 'Demo Sandbox User' }),
+          ipAddress: '127.0.0.1 (Sandbox)',
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Demo/1.0',
+          timestamp: new Date(Date.now() - 86400000),
+        },
+        {
+          id: `log_demo_5_${sessionId}`,
+          actorUserId: 'usr_demo_sandbox',
+          action: 'OT_SUBMITTED',
+          entityType: 'OT_RECORD',
+          entityId: `ot_demo_1_${sessionId}`,
+          afterData: JSON.stringify({ payableHours: 3.5, shift: 'General Shift', status: 'SUBMITTED' }),
+          ipAddress: '127.0.0.1 (Sandbox)',
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Demo/1.0',
+          timestamp: new Date(),
+        },
+      ];
+      for (const log of auditEntries) {
+        await db.insert(auditLogs).values(log).onConflictDoNothing();
+      }
     } catch (e) {
       console.warn('Auto-heal demo claim non-fatal error:', e);
     }
@@ -373,6 +435,69 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
     status: 'SUBMITTED',
     isFlaggedDuplicate: false,
   }).onConflictDoNothing();
+
+  // 10. Seed Prefilled Audit Logs for this session (Isolated Sandbox Showcase)
+  const auditEntries = [
+    {
+      id: `log_demo_1_${sessionId}`,
+      actorUserId: demoUserId,
+      action: 'SYSTEM_BOOTSTRAP',
+      entityType: 'SYSTEM',
+      entityId: `SYS_${sessionId}`,
+      afterData: JSON.stringify({ policyVersion: '2026-v1', engine: 'Deterministic-OT-v1', mode: 'SANDBOX_ISOLATED' }),
+      ipAddress: '127.0.0.1 (Sandbox)',
+      userAgent: 'OES Deterministic Sandbox Engine',
+      timestamp: new Date(Date.now() - 3 * 86400000),
+    },
+    {
+      id: `log_demo_2_${sessionId}`,
+      actorUserId: demoUserId,
+      action: 'EMPLOYEE_ACTIVATED',
+      entityType: 'EMPLOYEE',
+      entityId: `emp_001_${sessionId}`,
+      afterData: JSON.stringify({ fullName: 'Meet Mistry', designation: 'Senior Engineer', department: 'Engineering' }),
+      ipAddress: '127.0.0.1 (Sandbox)',
+      userAgent: 'OES Deterministic Sandbox Engine',
+      timestamp: new Date(Date.now() - 2 * 86400000),
+    },
+    {
+      id: `log_demo_3_${sessionId}`,
+      actorUserId: demoUserId,
+      action: 'OT_APPROVED',
+      entityType: 'OT_RECORD',
+      entityId: `ot_demo_2_${sessionId}`,
+      afterData: JSON.stringify({ payableHours: 4.0, approver: 'Demo Sandbox User', status: 'APPROVED' }),
+      ipAddress: '127.0.0.1 (Sandbox)',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Demo/1.0',
+      timestamp: new Date(Date.now() - 86400000),
+    },
+    {
+      id: `log_demo_4_${sessionId}`,
+      actorUserId: demoUserId,
+      action: 'EXPENSE_APPROVED',
+      entityType: 'EXPENSE',
+      entityId: `exp_demo_2_${sessionId}`,
+      afterData: JSON.stringify({ amount: 680, category: 'Food', approver: 'Demo Sandbox User' }),
+      ipAddress: '127.0.0.1 (Sandbox)',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Demo/1.0',
+      timestamp: new Date(Date.now() - 86400000),
+    },
+    {
+      id: `log_demo_5_${sessionId}`,
+      actorUserId: demoUserId,
+      action: 'OT_SUBMITTED',
+      entityType: 'OT_RECORD',
+      entityId: `ot_demo_1_${sessionId}`,
+      afterData: JSON.stringify({ payableHours: 3.5, shift: 'General Shift', status: 'SUBMITTED' }),
+      ipAddress: '127.0.0.1 (Sandbox)',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Demo/1.0',
+      timestamp: new Date(),
+    },
+  ];
+
+  for (const log of auditEntries) {
+    await db.insert(auditLogs).values(log).onConflictDoNothing();
+  }
 
   return demoEmpId;
 }
