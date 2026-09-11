@@ -308,14 +308,16 @@ export function Navbar({ userRole = 'EMPLOYEE', userName = 'User', employeeCode,
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between px-3 text-[11px] text-slate-500">
             <span className="flex items-center gap-1 font-medium">
               <span>Developed by</span>
-              <a
-                href="https://meetmistry.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-blue-600 hover:underline"
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowInfoModal(true);
+                }}
+                className="font-bold text-blue-600 hover:underline cursor-pointer focus:outline-none"
               >
                 Meet Mistry
-              </a>
+              </button>
             </span>
             <span className="text-[10px] text-slate-400 font-mono">v1.0</span>
           </div>
