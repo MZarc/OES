@@ -59,7 +59,6 @@ export function Footer() {
                     Developer
                   </span>
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">Software Engineer &amp; Designer</p>
               </div>
             </div>
 
