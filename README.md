@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://oeslive.vercel.app"><img src="https://img.shields.io/badge/Live_Demo-oeslive.vercel.app-2563eb?style=for-the-badge&logo=vercel" alt="Live Demo" /></a>
   <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-15.1.4-black?style=for-the-badge&logo=next.js" alt="Next.js 15" /></a>
   <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" /></a>
   <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
@@ -64,6 +65,16 @@ Whether deployed 24/7 on free-tier cloud infrastructure (Vercel + Supabase + Clo
 * **Installable Everywhere**: Native app-like experience on Windows, macOS, Android, and iOS.
 * **Offline Resilient**: Service worker caching for lightning-fast loads and low-connectivity environments.
 * **Smart Install Modal**: Discreet, non-intrusive install prompt that remembers dismissal per session.
+
+### 📊 7. Analytical Reports & Payroll Exports
+* **Date Range Filtering**: Flexible monthly and custom date range filters for precise accounting periods.
+* **Active-Only Aggregation**: Automatically isolates staff with active claims, filtering out inactive roster clutter.
+* **One-Click CSV Export**: Instant export of overtime hours and approved expense totals for payroll reconciliation.
+
+### ⚡ 8. Ultra-Low Latency Serverless Architecture
+* **Warm Container Connection Pool**: Persistent singleton connection pool cached on `globalThis` eliminates database renegotiation overhead on Vercel Serverless Lambdas.
+* **Request Lifecycle Deduplication**: Wrapped in React `cache()`, ensuring expensive session authorization queries run only once per HTTP request lifecycle.
+* **Zero-Waterfall Parallel Queries**: All KPI aggregates, counts, and historical data queries execute concurrently via `Promise.all`, delivering sub-second response times.
 
 ---
 
@@ -168,16 +179,27 @@ To reset the database and application to a pristine starting baseline, OES provi
 
 ## 🎮 Live Demo Sandbox (`demo@oes.com`)
 
-OES features an isolated, interactive **Live Demo Sandbox** designed for product demonstrations, portfolio showcases, and evaluation:
+OES features an enterprise-grade, interactive **Live Demo Sandbox** deployed at [**oeslive.vercel.app**](https://oeslive.vercel.app):
 
-* **Demo Credentials**:
-  * **Email**: `demo@oes.com`
-  * **Password**: `demo123456`
-* **Dual-Role Navigation**: `demo@oes.com` is provisioned as both a `SUPER_ADMIN` and a linked Employee Profile (`DEMO001`). Switch seamlessly between the **Admin Control Center** (`/admin/dashboard`) and **Employee Portal** (`/dashboard`) using the role switcher on the top navigation bar.
-* **100% Security & Isolation Protections**:
-  * 🛡️ **Factory Reset Blocked**: Destructive operations like `factoryResetSystemDataAction` and hard-deleting storage files are strictly blocked for `demo@oes.com`.
-  * 🛡️ **SMTP Protection**: Modifying or testing SMTP credentials as a demo user logs mail dispatches locally without corrupting production SMTP configuration.
-  * 🛡️ **Session Guarding**: Demo accounts cannot mutate system critical security parameters.
+* **Instant Demo Sign-In**:
+  * Click the **"Login to Demo Sandbox"** link on the sign-in page to authenticate in **~15ms** via optimized fast-path authentication.
+  * **Email**: `demo@oes.com` • **Password**: `demo123456`
+* **Concurrent Ephemeral Session Isolation**:
+  * Supports multiple simultaneous evaluators. Each visitor session receives an isolated, session-scoped workspace (`emp_demo_<sessionId>`).
+  * Additions, edits, or approval actions remain strictly scoped to that visitor's session without colliding with concurrent users or persisting permanently.
+* **Bidirectional Zero-Trust Data Isolation**:
+  * **Complete Model Segregation**: Full isolation across Employee Rosters, Overtime Claims, Expense Reimbursements, Reports, Mail System, and Append-Only Audit Logs.
+  * **Zero Leakage**: Demo sandbox data never contaminates real enterprise production tables, and real corporate records are completely hidden from demo visitors.
+* **Dual-Role Navigation**:
+  * `demo@oes.com` is provisioned as both a `SUPER_ADMIN` and a linked Employee Profile (`DEMO001`). Switch seamlessly between the **Admin Control Center** (`/admin/dashboard`) and **Employee Portal** (`/dashboard`) using the role switcher on the top navigation bar.
+* **Prefilled Showcase Data**:
+  * **Overtime Submissions**: Realistically prefilled with pending regular shift claims, approved submissions, and an active Sunday Overtime claim (`1.25×` multiplier) complete with transparent calculation snapshot traces.
+  * **Expense Receipts**: Sample claims across Travel, Food, and Accommodation with duplicate detection showcases.
+  * **Team Roster**: Preloaded showcase team members (`Meet Mistry`, `John Wick`, `Bruce Wayne`) across various shifts.
+* **100% Security & Mutability Protections**:
+  * 🛡️ **Factory Reset Blocked**: Destructive operations like system factory resets and storage wipes are strictly prohibited for demo sessions.
+  * 🛡️ **SMTP Protection**: Mail configuration updates in demo mode use an isolated local sandbox relay without modifying production credentials.
+  * 🛡️ **Session Guarding**: Demo accounts cannot tamper with system-wide root security configurations.
 
 ---
 
