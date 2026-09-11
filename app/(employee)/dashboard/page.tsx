@@ -105,7 +105,7 @@ export default async function EmployeeDashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Good morning, {userName}
+              Hello, {userName}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               Employee Portal • {employeeCode} • {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
