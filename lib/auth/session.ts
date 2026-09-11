@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { cache } from 'react';
 import { auth } from './index';
 import { db } from '@/db/client';
 import { employeeProfiles, users } from '@/db/schema';
@@ -27,9 +28,10 @@ export interface AuthenticatedContext {
 }
 
 /**
- * Retrieves the currently authenticated user session from request headers
+ * Retrieves the currently authenticated user session from request headers.
+ * Wrapped in React cache() to deduplicate execution across layouts, pages, and components in a single render pass.
  */
-export async function getCurrentSession(): Promise<AuthenticatedContext | null> {
+export const getCurrentSession = cache(async (): Promise<AuthenticatedContext | null> => {
   try {
     const reqHeaders = await headers();
     const session = await auth.api.getSession({
@@ -55,37 +57,6 @@ export async function getCurrentSession(): Promise<AuthenticatedContext | null> 
           where: eq(employeeProfiles.id, demoEmpId),
         });
       }
-
-      // Self-heal: ensure demo Sunday claim is always accurately set to 2026-09-06
-      try {
-        await db.execute(sql`
-          UPDATE ot_records 
-          SET work_date = '2026-09-06',
-              is_sunday = true,
-              multiplier = 1.25,
-              payable_hours = 6.25,
-              calculation_snapshot = ${JSON.stringify({
-                workDate: '2026-09-06',
-                shiftName: 'General Shift',
-                scheduledStart: '08:30',
-                scheduledEnd: '17:15',
-                otBoundary: '17:30',
-                startTime: '09:00',
-                endTime: '14:00',
-                rawHours: 5.0,
-                rawDurationMinutes: 300,
-                multiplier: 1.25,
-                payableHours: 6.25,
-                isSunday: true,
-                isHoliday: false,
-                ruleVersion: '2026-v1',
-                shiftVersion: '2026-v1',
-                calculatedAt: new Date().toISOString(),
-              })}
-          WHERE (work_date = '2026-09-05' AND (multiplier = 1.25 OR is_sunday = true))
-             OR (id LIKE '%demo%' AND (work_date = '2026-09-05' OR id LIKE '%demo_3%'));
-        `);
-      } catch (e) {}
     } else {
       empProfile = await db.query.employeeProfiles.findFirst({
         where: eq(employeeProfiles.userId, session.user.id),
@@ -120,7 +91,7 @@ export async function getCurrentSession(): Promise<AuthenticatedContext | null> 
     console.error('Session retrieval error:', error);
     return null;
   }
-}
+});
 
 /**
  * Asserts the request has a valid logged-in user

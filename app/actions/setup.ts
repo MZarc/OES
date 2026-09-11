@@ -112,18 +112,36 @@ export async function initializeSuperAdminAction(formData: {
 export async function ensureDemoAccountAction(): Promise<{ success: boolean; error?: string }> {
   try {
     const demoEmail = 'demo@oes.com';
+
+    // Fast-path: If demo user and credential account already exist, return immediately (~15ms)
+    const [existingDemoUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, demoEmail))
+      .limit(1);
+
+    if (existingDemoUser) {
+      const [existingAcc] = await db
+        .select({ id: accounts.id })
+        .from(accounts)
+        .where(eq(accounts.userId, existingDemoUser.id))
+        .limit(1);
+
+      if (existingAcc) {
+        return { success: true };
+      }
+    }
+
     const hashedPassword = await hashPassword('demo123456');
 
-    // 1. Ensure all shifts exist
+    // 1. Ensure all shifts exist (batched)
     const initialShifts = [
       { id: 'shift_first_v1', code: 'FIRST', name: 'First Shift', startTime: '07:00', endTime: '15:00', regularOtStartTime: '15:00', crossesMidnight: false, version: '2026-v1', active: true },
       { id: 'shift_general_v1', code: 'GENERAL', name: 'General Shift', startTime: '08:30', endTime: '17:15', regularOtStartTime: '17:30', crossesMidnight: false, version: '2026-v1', active: true },
       { id: 'shift_second_v1', code: 'SECOND', name: 'Second Shift', startTime: '15:00', endTime: '23:00', regularOtStartTime: '23:00', crossesMidnight: false, version: '2026-v1', active: true },
       { id: 'shift_night_v1', code: 'NIGHT', name: 'Night Shift', startTime: '23:00', endTime: '07:00', regularOtStartTime: '07:00', crossesMidnight: true, version: '2026-v1', active: true },
     ];
-    for (const s of initialShifts) {
-      await db.insert(shifts).values(s).onConflictDoNothing();
-    }
+    await db.insert(shifts).values(initialShifts).onConflictDoNothing();
 
     // 2. Ensure OT Rules exist
     await db.insert(otRules).values({
@@ -131,22 +149,20 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
       holidayMultiplier: 1.25, roundingPolicy: 'UP_TO_NEXT_1_HOUR', timezone: 'Asia/Kolkata', minOtMinutes: 0, isCurrent: true,
     }).onConflictDoNothing();
 
-    // 3. Ensure Expense Categories exist
+    // 3. Ensure Expense Categories exist (batched)
     const categories = ['Travel', 'Food', 'Accommodation', 'Transport', 'Office Supplies', 'Communication', 'Medical', 'Other'];
-    for (const cat of categories) {
-      await db.insert(expenseCategories).values({
-        id: `cat_${cat.toLowerCase().replace(/\s+/g, '_')}`, name: cat,
-        description: `Expenses relating to ${cat}`, active: true,
-      }).onConflictDoNothing();
-    }
+    await db.insert(expenseCategories).values(
+      categories.map((cat) => ({
+        id: `cat_${cat.toLowerCase().replace(/\s+/g, '_')}`,
+        name: cat,
+        description: `Expenses relating to ${cat}`,
+        active: true,
+      }))
+    ).onConflictDoNothing();
 
     // 4. Ensure demo user exists
-    let demoUser = await db.query.users.findFirst({
-      where: eq(users.email, demoEmail),
-    });
-
-    const demoUserId = demoUser?.id || 'usr_demo_sandbox';
-    if (!demoUser) {
+    const demoUserId = existingDemoUser?.id || 'usr_demo_sandbox';
+    if (!existingDemoUser) {
       await db.insert(users).values({
         id: demoUserId, name: 'Demo Sandbox User', email: demoEmail,
         emailVerified: true, role: 'SUPER_ADMIN',
@@ -156,9 +172,12 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
     }
 
     // 5. Ensure credential account exists with password demo123456
-    const existingAcc = await db.query.accounts.findFirst({
-      where: eq(accounts.userId, demoUserId),
-    });
+    const [existingAcc] = await db
+      .select({ id: accounts.id })
+      .from(accounts)
+      .where(eq(accounts.userId, demoUserId))
+      .limit(1);
+
     if (existingAcc) {
       await db.update(accounts).set({ password: hashedPassword }).where(eq(accounts.id, existingAcc.id));
     } else {

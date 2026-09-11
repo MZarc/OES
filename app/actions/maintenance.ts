@@ -77,15 +77,6 @@ export async function getControlCenterOTAction(params?: {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [countRes] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(otRecords)
-    .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
-    .where(whereClause);
-
-  const total = countRes?.count || 0;
-  const totalPages = Math.ceil(total / limit) || 1;
-
   let orderByClause = desc(otRecords.submittedAt);
   const isAsc = params?.sortOrder === 'asc';
   if (params?.sortBy === 'workDate') {
@@ -94,22 +85,32 @@ export async function getControlCenterOTAction(params?: {
     orderByClause = isAsc ? asc(otRecords.payableHours) : desc(otRecords.payableHours);
   }
 
-  const records = await db
-    .select({
-      id: otRecords.id,
-      employeeCode: employeeProfiles.employeeCode,
-      employeeName: employeeProfiles.fullName,
-      workDate: otRecords.workDate,
-      payableHours: otRecords.payableHours,
-      status: otRecords.status,
-      createdAt: otRecords.submittedAt,
-    })
-    .from(otRecords)
-    .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
-    .where(whereClause)
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
+  const [[countRes], records] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(otRecords)
+      .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
+      .where(whereClause),
+    db
+      .select({
+        id: otRecords.id,
+        employeeCode: employeeProfiles.employeeCode,
+        employeeName: employeeProfiles.fullName,
+        workDate: otRecords.workDate,
+        payableHours: otRecords.payableHours,
+        status: otRecords.status,
+        createdAt: otRecords.submittedAt,
+      })
+      .from(otRecords)
+      .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = countRes?.count || 0;
+  const totalPages = Math.ceil(total / limit) || 1;
 
   return { records, total, page, totalPages, limit };
 }
@@ -161,15 +162,6 @@ export async function getControlCenterExpensesAction(params?: {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [countRes] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(expenses)
-    .innerJoin(employeeProfiles, eq(expenses.employeeId, employeeProfiles.id))
-    .where(whereClause);
-
-  const total = countRes?.count || 0;
-  const totalPages = Math.ceil(total / limit) || 1;
-
   let orderByClause = desc(expenses.submittedAt);
   const isAsc = params?.sortOrder === 'asc';
   if (params?.sortBy === 'expenseDate') {
@@ -178,24 +170,34 @@ export async function getControlCenterExpensesAction(params?: {
     orderByClause = isAsc ? asc(expenses.amount) : desc(expenses.amount);
   }
 
-  const rawRecords = await db
-    .select({
-      id: expenses.id,
-      employeeCode: employeeProfiles.employeeCode,
-      employeeName: employeeProfiles.fullName,
-      category: expenses.categoryName,
-      amount: expenses.amount,
-      description: expenses.description,
-      expenseDate: expenses.expenseDate,
-      status: expenses.status,
-      createdAt: expenses.submittedAt,
-    })
-    .from(expenses)
-    .innerJoin(employeeProfiles, eq(expenses.employeeId, employeeProfiles.id))
-    .where(whereClause)
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
+  const [[countRes], rawRecords] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(expenses)
+      .innerJoin(employeeProfiles, eq(expenses.employeeId, employeeProfiles.id))
+      .where(whereClause),
+    db
+      .select({
+        id: expenses.id,
+        employeeCode: employeeProfiles.employeeCode,
+        employeeName: employeeProfiles.fullName,
+        category: expenses.categoryName,
+        amount: expenses.amount,
+        description: expenses.description,
+        expenseDate: expenses.expenseDate,
+        status: expenses.status,
+        createdAt: expenses.submittedAt,
+      })
+      .from(expenses)
+      .innerJoin(employeeProfiles, eq(expenses.employeeId, employeeProfiles.id))
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = countRes?.count || 0;
+  const totalPages = Math.ceil(total / limit) || 1;
 
   // Fetch linked attachment info
   const records = await Promise.all(

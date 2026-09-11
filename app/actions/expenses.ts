@@ -165,14 +165,6 @@ export async function getMyExpensesPaginatedAction(params?: {
 
   const whereClause = and(...conditions);
 
-  const [totalCountResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(expenses)
-    .where(whereClause);
-
-  const total = totalCountResult?.count || 0;
-  const totalPages = Math.ceil(total / limit);
-
   let orderByClause = desc(expenses.submittedAt);
   const isAsc = params?.sortOrder === 'asc';
   if (params?.sortBy === 'expenseDate') {
@@ -183,12 +175,21 @@ export async function getMyExpensesPaginatedAction(params?: {
     orderByClause = isAsc ? asc(expenses.submittedAt) : desc(expenses.submittedAt);
   }
 
-  const records = await db.query.expenses.findMany({
-    where: whereClause,
-    orderBy: [orderByClause],
-    limit,
-    offset,
-  });
+  const [[totalCountResult], records] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(expenses)
+      .where(whereClause),
+    db.query.expenses.findMany({
+      where: whereClause,
+      orderBy: [orderByClause],
+      limit,
+      offset,
+    }),
+  ]);
+
+  const total = totalCountResult?.count || 0;
+  const totalPages = Math.ceil(total / limit);
 
   return {
     records,
@@ -272,15 +273,6 @@ export async function getAdminExpensesPaginatedAction(params?: {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [totalCountResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(expenses)
-    .innerJoin(employeeProfiles, eq(expenses.employeeId, employeeProfiles.id))
-    .where(whereClause);
-
-  const total = totalCountResult?.count || 0;
-  const totalPages = Math.ceil(total / limit);
-
   let orderByClause = desc(expenses.submittedAt);
   const isAsc = params?.sortOrder === 'asc';
   if (params?.sortBy === 'expenseDate') {
@@ -293,29 +285,39 @@ export async function getAdminExpensesPaginatedAction(params?: {
     orderByClause = isAsc ? asc(expenses.submittedAt) : desc(expenses.submittedAt);
   }
 
-  const records = await db
-    .select({
-      id: expenses.id,
-      expenseDate: expenses.expenseDate,
-      categoryName: expenses.categoryName,
-      amount: expenses.amount,
-      description: expenses.description,
-      status: expenses.status,
-      isFlaggedDuplicate: expenses.isFlaggedDuplicate,
-      duplicateReason: expenses.duplicateReason,
-      rejectionReason: expenses.rejectionReason,
-      submittedAt: expenses.submittedAt,
-      reviewedAt: expenses.reviewedAt,
-      employeeName: employeeProfiles.fullName,
-      employeeCode: employeeProfiles.employeeCode,
-      department: employeeProfiles.department,
-    })
-    .from(expenses)
-    .innerJoin(employeeProfiles, eq(expenses.employeeId, employeeProfiles.id))
-    .where(whereClause)
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
+  const [[totalCountResult], records] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(expenses)
+      .innerJoin(employeeProfiles, eq(expenses.employeeId, employeeProfiles.id))
+      .where(whereClause),
+    db
+      .select({
+        id: expenses.id,
+        expenseDate: expenses.expenseDate,
+        categoryName: expenses.categoryName,
+        amount: expenses.amount,
+        description: expenses.description,
+        status: expenses.status,
+        isFlaggedDuplicate: expenses.isFlaggedDuplicate,
+        duplicateReason: expenses.duplicateReason,
+        rejectionReason: expenses.rejectionReason,
+        submittedAt: expenses.submittedAt,
+        reviewedAt: expenses.reviewedAt,
+        employeeName: employeeProfiles.fullName,
+        employeeCode: employeeProfiles.employeeCode,
+        department: employeeProfiles.department,
+      })
+      .from(expenses)
+      .innerJoin(employeeProfiles, eq(expenses.employeeId, employeeProfiles.id))
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = totalCountResult?.count || 0;
+  const totalPages = Math.ceil(total / limit);
 
   return {
     records,

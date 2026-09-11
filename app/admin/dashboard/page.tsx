@@ -15,48 +15,44 @@ export default async function AdminDashboardPage() {
   const isDemo = isDemoEmail(session?.user?.email);
   const sessionId = session?.session?.id;
 
-  // High-performance SQL aggregates for heavy datasets (PRD Section 27)
+  // High-performance concurrent SQL aggregates for heavy datasets (PRD Section 27)
   const demoExcludeEmp = sql`"id" NOT LIKE 'emp_demo_%' AND "id" NOT LIKE 'emp_001_%' AND "id" NOT LIKE 'emp_002_%' AND "id" NOT LIKE 'emp_003_%'`;
   const demoScopeEmp = sessionId ? sql`"id" LIKE ${'%_' + sessionId}` : sql`1=0`;
-
-  const [empCount] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(employeeProfiles)
-    .where(isDemo ? demoScopeEmp : demoExcludeEmp);
 
   const demoExcludeOt = sql`"employee_id" NOT LIKE 'emp_demo_%' AND "employee_id" NOT LIKE 'emp_001_%' AND "employee_id" NOT LIKE 'emp_002_%' AND "employee_id" NOT LIKE 'emp_003_%'`;
   const demoScopeOt = sessionId ? sql`"employee_id" LIKE ${'%_' + sessionId}` : sql`1=0`;
 
-  const [pendingOt] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(otRecords)
-    .where(sql`${otRecords.status} = 'SUBMITTED' AND (${isDemo ? demoScopeOt : demoExcludeOt})`);
-
   const demoExcludeExp = sql`"employee_id" NOT LIKE 'emp_demo_%' AND "employee_id" NOT LIKE 'emp_001_%' AND "employee_id" NOT LIKE 'emp_002_%' AND "employee_id" NOT LIKE 'emp_003_%'`;
   const demoScopeExp = sessionId ? sql`"employee_id" LIKE ${'%_' + sessionId}` : sql`1=0`;
 
-  const [pendingExp] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(expenses)
-    .where(sql`${expenses.status} = 'SUBMITTED' AND (${isDemo ? demoScopeExp : demoExcludeExp})`);
-
-  const [monthOt] = await db
-    .select({
-      sum: sql<number>`COALESCE(sum(payable_hours), 0)::float`,
-    })
-    .from(otRecords)
-    .where(
-      sql`${otRecords.status} = 'APPROVED' AND ${otRecords.workDate} LIKE ${currentMonth + '%'} AND (${isDemo ? demoScopeOt : demoExcludeOt})`
-    );
-
-  const [monthExp] = await db
-    .select({
-      sum: sql<number>`COALESCE(sum(amount), 0)::float`,
-    })
-    .from(expenses)
-    .where(
-      sql`${expenses.status} = 'APPROVED' AND ${expenses.expenseDate} LIKE ${currentMonth + '%'} AND (${isDemo ? demoScopeExp : demoExcludeExp})`
-    );
+  const [
+    [empCount],
+    [pendingOt],
+    [pendingExp],
+    [monthOt],
+    [monthExp],
+  ] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(employeeProfiles)
+      .where(isDemo ? demoScopeEmp : demoExcludeEmp),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(otRecords)
+      .where(sql`${otRecords.status} = 'SUBMITTED' AND (${isDemo ? demoScopeOt : demoExcludeOt})`),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(expenses)
+      .where(sql`${expenses.status} = 'SUBMITTED' AND (${isDemo ? demoScopeExp : demoExcludeExp})`),
+    db
+      .select({ sum: sql<number>`COALESCE(sum(payable_hours), 0)::float` })
+      .from(otRecords)
+      .where(sql`${otRecords.status} = 'APPROVED' AND ${otRecords.workDate} LIKE ${currentMonth + '%'} AND (${isDemo ? demoScopeOt : demoExcludeOt})`),
+    db
+      .select({ sum: sql<number>`COALESCE(sum(amount), 0)::float` })
+      .from(expenses)
+      .where(sql`${expenses.status} = 'APPROVED' AND ${expenses.expenseDate} LIKE ${currentMonth + '%'} AND (${isDemo ? demoScopeExp : demoExcludeExp})`),
+  ]);
 
   const totalEmployees = empCount?.count || 0;
   const pendingOtCount = pendingOt?.count || 0;

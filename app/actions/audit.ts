@@ -61,14 +61,6 @@ export async function getAuditLogsPaginatedAction(params?: {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [countResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(auditLogs)
-    .where(whereClause);
-
-  const total = countResult?.count || 0;
-  const totalPages = Math.ceil(total / limit);
-
   let orderByClause = desc(auditLogs.timestamp);
   const isAsc = params?.sortOrder === 'asc';
   if (params?.sortBy === 'action') {
@@ -77,26 +69,35 @@ export async function getAuditLogsPaginatedAction(params?: {
     orderByClause = isAsc ? asc(auditLogs.timestamp) : desc(auditLogs.timestamp);
   }
 
-  const logs = await db
-    .select({
-      id: auditLogs.id,
-      action: auditLogs.action,
-      entityType: auditLogs.entityType,
-      entityId: auditLogs.entityId,
-      beforeData: auditLogs.beforeData,
-      afterData: auditLogs.afterData,
-      ipAddress: auditLogs.ipAddress,
-      userAgent: auditLogs.userAgent,
-      timestamp: auditLogs.timestamp,
-      actorName: users.name,
-      actorEmail: users.email,
-    })
-    .from(auditLogs)
-    .leftJoin(users, eq(auditLogs.actorUserId, users.id))
-    .where(whereClause)
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
+  const [[countResult], logs] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(auditLogs)
+      .where(whereClause),
+    db
+      .select({
+        id: auditLogs.id,
+        action: auditLogs.action,
+        entityType: auditLogs.entityType,
+        entityId: auditLogs.entityId,
+        beforeData: auditLogs.beforeData,
+        afterData: auditLogs.afterData,
+        ipAddress: auditLogs.ipAddress,
+        userAgent: auditLogs.userAgent,
+        timestamp: auditLogs.timestamp,
+        actorName: users.name,
+        actorEmail: users.email,
+      })
+      .from(auditLogs)
+      .leftJoin(users, eq(auditLogs.actorUserId, users.id))
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = countResult?.count || 0;
+  const totalPages = Math.ceil(total / limit);
 
   return {
     logs,

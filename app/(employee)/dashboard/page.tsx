@@ -25,64 +25,70 @@ export default async function EmployeeDashboardPage() {
   let recentExpenses: any[] = [];
 
   if (employeeId) {
-    const [otSum] = await db
-      .select({ sum: sql<number>`COALESCE(sum(payable_hours), 0)::float` })
-      .from(otRecords)
-      .where(
-        sql`${otRecords.employeeId} = ${employeeId} AND ${otRecords.status} = 'APPROVED' AND ${otRecords.workDate} LIKE ${currentMonth + '%'}`
-      );
-
-    const [expSum] = await db
-      .select({ sum: sql<number>`COALESCE(sum(amount), 0)::float` })
-      .from(expenses)
-      .where(
-        sql`${expenses.employeeId} = ${employeeId} AND ${expenses.status} = 'APPROVED' AND ${expenses.expenseDate} LIKE ${currentMonth + '%'}`
-      );
-
-    const [pendingOt] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(otRecords)
-      .where(
-        sql`${otRecords.employeeId} = ${employeeId} AND ${otRecords.status} = 'SUBMITTED'`
-      );
-
-    const [pendingExp] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(expenses)
-      .where(
-        sql`${expenses.employeeId} = ${employeeId} AND ${expenses.status} = 'SUBMITTED'`
-      );
-
-    const [appOt] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(otRecords)
-      .where(
-        sql`${otRecords.employeeId} = ${employeeId} AND ${otRecords.status} = 'APPROVED'`
-      );
-
-    const [appExp] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(expenses)
-      .where(
-        sql`${expenses.employeeId} = ${employeeId} AND ${expenses.status} = 'APPROVED'`
-      );
+    const [
+      [otSum],
+      [expSum],
+      [pendingOt],
+      [pendingExp],
+      [appOt],
+      [appExp],
+      recentOtRows,
+      recentExpRows,
+    ] = await Promise.all([
+      db
+        .select({ sum: sql<number>`COALESCE(sum(payable_hours), 0)::float` })
+        .from(otRecords)
+        .where(
+          sql`${otRecords.employeeId} = ${employeeId} AND ${otRecords.status} = 'APPROVED' AND ${otRecords.workDate} LIKE ${currentMonth + '%'}`
+        ),
+      db
+        .select({ sum: sql<number>`COALESCE(sum(amount), 0)::float` })
+        .from(expenses)
+        .where(
+          sql`${expenses.employeeId} = ${employeeId} AND ${expenses.status} = 'APPROVED' AND ${expenses.expenseDate} LIKE ${currentMonth + '%'}`
+        ),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(otRecords)
+        .where(
+          sql`${otRecords.employeeId} = ${employeeId} AND ${otRecords.status} = 'SUBMITTED'`
+        ),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(expenses)
+        .where(
+          sql`${expenses.employeeId} = ${employeeId} AND ${expenses.status} = 'SUBMITTED'`
+        ),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(otRecords)
+        .where(
+          sql`${otRecords.employeeId} = ${employeeId} AND ${otRecords.status} = 'APPROVED'`
+        ),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(expenses)
+        .where(
+          sql`${expenses.employeeId} = ${employeeId} AND ${expenses.status} = 'APPROVED'`
+        ),
+      db.query.otRecords.findMany({
+        where: eq(otRecords.employeeId, employeeId),
+        orderBy: [desc(otRecords.workDate)],
+        limit: 5,
+      }),
+      db.query.expenses.findMany({
+        where: eq(expenses.employeeId, employeeId),
+        orderBy: [desc(expenses.expenseDate)],
+        limit: 5,
+      }),
+    ]);
 
     totalOtHours = otSum?.sum || 0;
     totalExpenseAmount = expSum?.sum || 0;
     pendingCount = (pendingOt?.count || 0) + (pendingExp?.count || 0);
     approvedCount = (appOt?.count || 0) + (appExp?.count || 0);
-
-    recentOt = await db.query.otRecords.findMany({
-      where: eq(otRecords.employeeId, employeeId),
-      orderBy: [desc(otRecords.workDate)],
-      limit: 5,
-    });
-
-    recentExpenses = await db.query.expenses.findMany({
-      where: eq(expenses.employeeId, employeeId),
-      orderBy: [desc(expenses.expenseDate)],
-      limit: 5,
-    });
+    recentOt = recentOtRows;
+    recentExpenses = recentExpRows;
   }
 
   return (

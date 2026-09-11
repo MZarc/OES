@@ -110,20 +110,36 @@ export async function getReportsSummaryAction(params?: {
   const expByEmployee = new Map<string, { approvedAmount: number; pendingCount: number }>();
 
   if (empIds.length > 0) {
-    const allOt = await db
-      .select({
-        employeeId: otRecords.employeeId,
-        payableHours: otRecords.payableHours,
-        status: otRecords.status,
-      })
-      .from(otRecords)
-      .where(
-        and(
-          inArray(otRecords.employeeId, empIds),
-          gte(otRecords.workDate, fromDate),
-          lte(otRecords.workDate, toDate)
-        )
-      );
+    const [allOt, allExp] = await Promise.all([
+      db
+        .select({
+          employeeId: otRecords.employeeId,
+          payableHours: otRecords.payableHours,
+          status: otRecords.status,
+        })
+        .from(otRecords)
+        .where(
+          and(
+            inArray(otRecords.employeeId, empIds),
+            gte(otRecords.workDate, fromDate),
+            lte(otRecords.workDate, toDate)
+          )
+        ),
+      db
+        .select({
+          employeeId: expenses.employeeId,
+          amount: expenses.amount,
+          status: expenses.status,
+        })
+        .from(expenses)
+        .where(
+          and(
+            inArray(expenses.employeeId, empIds),
+            gte(expenses.expenseDate, fromDate),
+            lte(expenses.expenseDate, toDate)
+          )
+        ),
+    ]);
 
     for (const o of allOt) {
       const existing = otByEmployee.get(o.employeeId) || { approvedHours: 0, pendingCount: 0 };
@@ -134,21 +150,6 @@ export async function getReportsSummaryAction(params?: {
       }
       otByEmployee.set(o.employeeId, existing);
     }
-
-    const allExp = await db
-      .select({
-        employeeId: expenses.employeeId,
-        amount: expenses.amount,
-        status: expenses.status,
-      })
-      .from(expenses)
-      .where(
-        and(
-          inArray(expenses.employeeId, empIds),
-          gte(expenses.expenseDate, fromDate),
-          lte(expenses.expenseDate, toDate)
-        )
-      );
 
     for (const e of allExp) {
       const existing = expByEmployee.get(e.employeeId) || { approvedAmount: 0, pendingCount: 0 };

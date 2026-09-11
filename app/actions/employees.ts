@@ -986,14 +986,6 @@ export async function getEmployeesPaginatedAction(params?: {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [totalCountResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(employeeProfiles)
-    .where(whereClause);
-
-  const total = totalCountResult?.count || 0;
-  const totalPages = Math.ceil(total / limit);
-
   let orderByClause = desc(employeeProfiles.createdAt);
   const isAsc = params?.sortOrder === 'asc';
   if (params?.sortBy === 'fullName') {
@@ -1006,26 +998,35 @@ export async function getEmployeesPaginatedAction(params?: {
     orderByClause = isAsc ? asc(employeeProfiles.createdAt) : desc(employeeProfiles.createdAt);
   }
 
-  const records = await db
-    .select({
-      id: employeeProfiles.id,
-      employeeCode: employeeProfiles.employeeCode,
-      fullName: employeeProfiles.fullName,
-      email: employeeProfiles.email,
-      department: employeeProfiles.department,
-      designation: employeeProfiles.designation,
-      status: employeeProfiles.status,
-      dateJoined: employeeProfiles.dateJoined,
-      shiftId: employeeProfiles.shiftId,
-      shiftName: shifts.name,
-      shiftCode: shifts.code,
-    })
-    .from(employeeProfiles)
-    .innerJoin(shifts, eq(employeeProfiles.shiftId, shifts.id))
-    .where(whereClause)
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
+  const [[totalCountResult], records] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(employeeProfiles)
+      .where(whereClause),
+    db
+      .select({
+        id: employeeProfiles.id,
+        employeeCode: employeeProfiles.employeeCode,
+        fullName: employeeProfiles.fullName,
+        email: employeeProfiles.email,
+        department: employeeProfiles.department,
+        designation: employeeProfiles.designation,
+        status: employeeProfiles.status,
+        dateJoined: employeeProfiles.dateJoined,
+        shiftId: employeeProfiles.shiftId,
+        shiftName: shifts.name,
+        shiftCode: shifts.code,
+      })
+      .from(employeeProfiles)
+      .innerJoin(shifts, eq(employeeProfiles.shiftId, shifts.id))
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = totalCountResult?.count || 0;
+  const totalPages = Math.ceil(total / limit);
 
   return {
     records,

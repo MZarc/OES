@@ -197,38 +197,6 @@ export async function getMyOTRecordsPaginatedAction(params?: {
   const ctx = await requireAuth();
   if (!ctx.employee) return { records: [], total: 0, page: 1, totalPages: 0, limit: 15 };
 
-  if (ctx.user.email === 'demo@oes.com') {
-    try {
-      await db.execute(sql`
-        UPDATE ot_records 
-        SET work_date = '2026-09-06',
-            is_sunday = true,
-            multiplier = 1.25,
-            payable_hours = 6.25,
-            calculation_snapshot = ${JSON.stringify({
-              workDate: '2026-09-06',
-              shiftName: 'General Shift',
-              scheduledStart: '08:30',
-              scheduledEnd: '17:15',
-              otBoundary: '17:30',
-              startTime: '09:00',
-              endTime: '14:00',
-              rawHours: 5.0,
-              rawDurationMinutes: 300,
-              multiplier: 1.25,
-              payableHours: 6.25,
-              isSunday: true,
-              isHoliday: false,
-              ruleVersion: '2026-v1',
-              shiftVersion: '2026-v1',
-              calculatedAt: new Date().toISOString(),
-            })}
-        WHERE (work_date = '2026-09-05' AND (multiplier = 1.25 OR is_sunday = true))
-           OR (id LIKE '%demo%' AND (work_date = '2026-09-05' OR id LIKE '%demo_3%'));
-      `);
-    } catch (e) {}
-  }
-
   const page = Math.max(1, params?.page || 1);
   const limit = Math.min(100, Math.max(1, params?.limit || 15));
   const offset = (page - 1) * limit;
@@ -246,14 +214,6 @@ export async function getMyOTRecordsPaginatedAction(params?: {
 
   const whereClause = and(...conditions);
 
-  const [totalCountResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(otRecords)
-    .where(whereClause);
-
-  const total = totalCountResult?.count || 0;
-  const totalPages = Math.ceil(total / limit);
-
   let orderByClause = desc(otRecords.submittedAt);
   const isAsc = params?.sortOrder === 'asc';
   if (params?.sortBy === 'workDate') {
@@ -264,12 +224,21 @@ export async function getMyOTRecordsPaginatedAction(params?: {
     orderByClause = isAsc ? asc(otRecords.submittedAt) : desc(otRecords.submittedAt);
   }
 
-  const records = await db.query.otRecords.findMany({
-    where: whereClause,
-    orderBy: [orderByClause],
-    limit,
-    offset,
-  });
+  const [[totalCountResult], records] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(otRecords)
+      .where(whereClause),
+    db.query.otRecords.findMany({
+      where: whereClause,
+      orderBy: [orderByClause],
+      limit,
+      offset,
+    }),
+  ]);
+
+  const total = totalCountResult?.count || 0;
+  const totalPages = Math.ceil(total / limit);
 
   return {
     records,
@@ -356,15 +325,6 @@ export async function getAdminOTPaginatedAction(params?: {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [totalCountResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(otRecords)
-    .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
-    .where(whereClause);
-
-  const total = totalCountResult?.count || 0;
-  const totalPages = Math.ceil(total / limit);
-
   let orderByClause = desc(otRecords.submittedAt);
   const isAsc = params?.sortOrder === 'asc';
   if (params?.sortBy === 'workDate') {
@@ -377,35 +337,45 @@ export async function getAdminOTPaginatedAction(params?: {
     orderByClause = isAsc ? asc(otRecords.submittedAt) : desc(otRecords.submittedAt);
   }
 
-  const records = await db
-    .select({
-      id: otRecords.id,
-      workDate: otRecords.workDate,
-      startTime: otRecords.startTime,
-      endTime: otRecords.endTime,
-      rawHours: otRecords.rawHours,
-      multiplier: otRecords.multiplier,
-      payableHours: otRecords.payableHours,
-      isSunday: otRecords.isSunday,
-      isHoliday: otRecords.isHoliday,
-      holidayName: otRecords.holidayName,
-      status: otRecords.status,
-      submittedAt: otRecords.submittedAt,
-      reviewedAt: otRecords.reviewedAt,
-      snapshot: otRecords.calculationSnapshot,
-      rejectionReason: otRecords.rejectionReason,
-      employeeName: employeeProfiles.fullName,
-      employeeCode: employeeProfiles.employeeCode,
-      department: employeeProfiles.department,
-      shiftName: shifts.name,
-    })
-    .from(otRecords)
-    .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
-    .innerJoin(shifts, eq(otRecords.shiftId, shifts.id))
-    .where(whereClause)
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
+  const [[totalCountResult], records] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(otRecords)
+      .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
+      .where(whereClause),
+    db
+      .select({
+        id: otRecords.id,
+        workDate: otRecords.workDate,
+        startTime: otRecords.startTime,
+        endTime: otRecords.endTime,
+        rawHours: otRecords.rawHours,
+        multiplier: otRecords.multiplier,
+        payableHours: otRecords.payableHours,
+        isSunday: otRecords.isSunday,
+        isHoliday: otRecords.isHoliday,
+        holidayName: otRecords.holidayName,
+        status: otRecords.status,
+        submittedAt: otRecords.submittedAt,
+        reviewedAt: otRecords.reviewedAt,
+        snapshot: otRecords.calculationSnapshot,
+        rejectionReason: otRecords.rejectionReason,
+        employeeName: employeeProfiles.fullName,
+        employeeCode: employeeProfiles.employeeCode,
+        department: employeeProfiles.department,
+        shiftName: shifts.name,
+      })
+      .from(otRecords)
+      .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
+      .innerJoin(shifts, eq(otRecords.shiftId, shifts.id))
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = totalCountResult?.count || 0;
+  const totalPages = Math.ceil(total / limit);
 
   return {
     records,
