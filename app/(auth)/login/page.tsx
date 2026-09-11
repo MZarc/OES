@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Mail, AlertCircle, Loader2, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
-import { checkSystemInitializedAction } from '@/app/actions/setup';
+import { checkSystemInitializedAction, ensureDemoAccountAction } from '@/app/actions/setup';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -197,41 +197,28 @@ export default function LoginPage() {
 
         {/* Live Demo Sandbox Section */}
         {process.env.NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS !== 'false' && (
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-extrabold text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-                Live Demo Sandbox
-              </span>
-              <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                Isolated Environment
-              </span>
-            </div>
-
+          <div className="mt-5 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={async () => {
+                setLoading(true);
+                setError(null);
+                await ensureDemoAccountAction();
                 setEmail('demo@oes.com');
                 setPassword('demo123456');
                 await executeSignIn('demo@oes.com', 'demo123456');
               }}
               disabled={loading || isRedirecting}
-              className="w-full p-3.5 text-left rounded-xl bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-200 hover:border-blue-400 hover:shadow-xs transition-all cursor-pointer group"
+              className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-2.5 px-4 rounded-lg text-sm font-semibold hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                  🚀 Log in to Demo Sandbox (`demo@oes.com`)
-                </span>
-                <span className="text-[10px] font-bold text-blue-600 bg-blue-100/80 px-2 py-0.5 rounded-md">
-                  1-Click Auto Login
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                Single login for both <strong>Admin Console</strong> &amp; <strong>Employee Portal</strong>. Explore prefilled shift rules, OT claims, and expense approvals safely.
-              </p>
-              <div className="mt-2 text-[10px] font-mono text-slate-400">
-                Email: <span className="font-semibold text-slate-700">demo@oes.com</span> • Password: <span className="font-semibold text-slate-700">demo123456</span>
-              </div>
+              {loading || isRedirecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <span>Login to Demo Sandbox</span>
+              )}
             </button>
           </div>
         )}
