@@ -268,6 +268,9 @@ export async function hardDeleteExpenseRecordsAction(expenseIds: string[], admin
 
 export async function hardDeleteAllUploadedImagesAction(adminPassword?: string) {
   const admin = await requireAdmin();
+  if (admin.user.email === 'demo@oes.com') {
+    throw new Error('🔒 Demo Sandbox: Receipt storage purge is locked in live demo mode for security.');
+  }
   await verifyAdminPassword(admin.user.email, adminPassword);
 
   const allAtts = await db.select().from(expenseAttachments);
@@ -297,6 +300,9 @@ export async function hardDeleteAllUploadedImagesAction(adminPassword?: string) 
 
 export async function factoryResetSystemDataAction(confirmPhrase: string, adminPassword?: string) {
   const admin = await requireAdmin();
+  if (admin.user.email === 'demo@oes.com') {
+    throw new Error('🔒 Demo Sandbox: System Factory Reset is locked in live demo mode for security.');
+  }
   await verifyAdminPassword(admin.user.email, adminPassword);
 
   if (confirmPhrase.trim().toUpperCase() !== 'PERMANENT RESET') {

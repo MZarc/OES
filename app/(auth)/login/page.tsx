@@ -201,39 +201,59 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {process.env.NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS === 'true' && (
+        {/* Live Demo Sandbox Section */}
+        {process.env.NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS !== 'false' && (
           <div className="mt-6 pt-5 border-t border-slate-100">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5 text-center">
-              One-Click Demo Credentials
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-extrabold text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                Live Demo Sandbox
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                Isolated Environment
+              </span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { role: 'Super Admin', email: 'admin@oes.local', pass: 'Admin@123456', desc: 'Full System Access' },
-                { role: 'Meet Mistry', email: 'meet@oes.local', pass: 'Employee@123', desc: 'First Shift (7-15)' },
-                { role: 'John Wick', email: 'john.wick@oes.local', pass: 'Employee@123', desc: 'General Shift (8:30-17:15)' },
-                { role: 'Bruce Wayne', email: 'bruce.wayne@oes.local', pass: 'Employee@123', desc: 'Night Shift (23-07)' },
-              ].map((d) => {
-                const isSelected = email === d.email;
-                return (
-                  <button
-                    key={d.email}
-                    type="button"
-                    onClick={() => handleSelectDemo(d.email, d.pass)}
-                    className={`p-2.5 text-left rounded-xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800">{d.role}</span>
-                      {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />}
-                    </div>
-                    <div className="text-[10px] text-slate-500 truncate mt-0.5">{d.email}</div>
-                    <div className="text-[10px] text-slate-400 font-medium">{d.desc}</div>
-                  </button>
-                );
-              })}
+
+            <button
+              type="button"
+              onClick={async () => {
+                handleSelectDemo('demo@oes.com', 'demo123456');
+                await executeSignIn('demo@oes.com', 'demo123456');
+              }}
+              disabled={loading || isRedirecting}
+              className="w-full p-3.5 text-left rounded-xl bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-200 hover:border-blue-400 hover:shadow-xs transition-all cursor-pointer group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                  🚀 Log in as Demo Sandbox (`demo@oes.com`)
+                </span>
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-100/80 px-2 py-0.5 rounded-md">
+                  1-Click Auto Login
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                Single login for both <strong>Admin Console</strong> &amp; <strong>Employee Portal</strong>. Explore prefilled shift rules, OT claims, and expense approvals safely.
+              </p>
+              <div className="mt-2 text-[10px] font-mono text-slate-400">
+                Email: <span className="font-semibold text-slate-700">demo@oes.com</span> • Password: <span className="font-semibold text-slate-700">demo123456</span>
+              </div>
+            </button>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-[10px] font-medium text-slate-500">
+              <button
+                type="button"
+                onClick={() => handleSelectDemo('demo@oes.com', 'demo123456')}
+                className="py-1.5 px-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors"
+              >
+                Fill Admin Credentials
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectDemo('meet@oes.local', 'Employee@123')}
+                className="py-1.5 px-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors"
+              >
+                Fill Employee (Meet Mistry)
+              </button>
             </div>
           </div>
         )}

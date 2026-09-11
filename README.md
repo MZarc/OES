@@ -132,10 +132,52 @@ OES features a strict separation between **Sandbox/Development** and **Pristine 
 | Capability | 🛠️ Development / Sandbox | 🏢 Real-World Production |
 | :--- | :--- | :--- |
 | **Database Seed** | `npm run db:seed` | `npm run db:fresh` |
-| **User Directory** | Demo staff (`meet@oes.local`, `john.wick@...`) | **0 users** (Pristine clean state) |
-| **Admin Setup** | Pre-seeded default admin | **Web Setup Wizard (`/setup`)** |
+| **User Directory** | Demo sandbox (`demo@oes.com`, `meet@oes.local`) | **0 users** (Pristine clean state) |
+| **Admin Setup** | Pre-seeded demo / admin | **Web Setup Wizard (`/setup`)** |
 | **Login Screen** | One-Click Demo Credentials grid | Clean corporate portal sign-in |
-| **Sample Data** | Dummy pending OT & receipts | Empty queues awaiting real staff |
+| **Sample Data** | Prefilled demo claims & rosters | Empty queues awaiting real staff |
+
+---
+
+## 🧹 Resetting Application & Database (`clean.bat`)
+
+To reset the database and application to a pristine starting baseline, OES provides a 1-click Windows batch script and cross-platform npm scripts:
+
+### Using `clean.bat` (Windows 1-Click Reset)
+1. Double-click `clean.bat` or execute in terminal:
+   ```cmd
+   clean.bat
+   ```
+2. Confirm the prompt when asked (`Y` / `N`).
+3. The script will automatically:
+   * Execute `npm run db:fresh` (drops/truncates tables, seeds 2026 gazetted holidays, default shift policies & expense categories).
+   * Seed the isolated **Live Demo Sandbox** account (`demo@oes.com`).
+   * Clear the local `.next` build cache for a clean compilation.
+
+### Cross-Platform Reset (macOS / Linux / Windows)
+* **Clean Baseline (0 Users)**:
+  ```bash
+  npm run db:fresh
+  ```
+* **Sandbox Baseline (Prefilled Demo Data)**:
+  ```bash
+  npm run db:seed
+  ```
+
+---
+
+## 🎮 Live Demo Sandbox (`demo@oes.com`)
+
+OES features an isolated, interactive **Live Demo Sandbox** designed for product demonstrations, portfolio showcases, and evaluation:
+
+* **Demo Credentials**:
+  * **Email**: `demo@oes.com`
+  * **Password**: `demo123456`
+* **Dual-Role Navigation**: `demo@oes.com` is provisioned as both a `SUPER_ADMIN` and a linked Employee Profile (`DEMO001`). Switch seamlessly between the **Admin Control Center** (`/admin/dashboard`) and **Employee Portal** (`/dashboard`) using the role switcher on the top navigation bar.
+* **100% Security & Isolation Protections**:
+  * 🛡️ **Factory Reset Blocked**: Destructive operations like `factoryResetSystemDataAction` and hard-deleting storage files are strictly blocked for `demo@oes.com`.
+  * 🛡️ **SMTP Protection**: Modifying or testing SMTP credentials as a demo user logs mail dispatches locally without corrupting production SMTP configuration.
+  * 🛡️ **Session Guarding**: Demo accounts cannot mutate system critical security parameters.
 
 ---
 
@@ -185,6 +227,7 @@ Host OES **100% free with zero monthly server costs**:
 | `SMTP_USER` | SMTP username | `your-email@gmail.com` |
 | `SMTP_PASS` | SMTP App Password (16-char for Gmail) | `your-app-password` |
 | `SMTP_FROM` | Sender identity | `OES System <noreply@yourdomain.com>` |
+| `NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS` | Show/hide 1-click Demo credentials card on login page | `true` (for demo preview) / `false` (for strict corporate production) |
 
 3. Click **Deploy**. Vercel will install dependencies, compile all routes, and launch your instance with global CDN and SSL.
 

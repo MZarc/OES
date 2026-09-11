@@ -98,6 +98,23 @@ export async function saveSmtpConfigAction(config: {
     testError = err.message;
   }
 
+  // In Demo Sandbox Mode, test credentials without modifying production system settings
+  const admin = await requireAdmin();
+  if (admin.user.email === 'demo@oes.com') {
+    if (testError) {
+      return {
+        success: true,
+        hasSavedPassword: Boolean(finalConfig.pass),
+        warning: `🔒 Demo Sandbox: Credentials tested, returned: ${testError}. Live production settings remain protected.`,
+      };
+    }
+    return {
+      success: true,
+      hasSavedPassword: Boolean(finalConfig.pass),
+      message: '🔒 Demo Sandbox: SMTP connection verified! Live production settings remain protected.',
+    };
+  }
+
   // Persist to system_settings in PostgreSQL so settings never vanish on server reload
   await db
     .insert(systemSettings)
