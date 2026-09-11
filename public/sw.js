@@ -1,7 +1,6 @@
 // OES PWA Progressive Web App Service Worker
-const CACHE_NAME = 'oes-pwa-v1';
+const CACHE_NAME = 'oes-pwa-v2';
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/favicon.ico',
   '/icon-192.png',
@@ -73,9 +72,6 @@ self.addEventListener('fetch', (event) => {
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) {
             return cachedResponse;
-          }
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
           }
           return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
         });

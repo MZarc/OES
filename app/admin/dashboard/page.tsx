@@ -1,4 +1,5 @@
 import { getCurrentSession } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
 import { db } from '@/db/client';
 import { employeeProfiles, otRecords, expenses } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -10,10 +11,13 @@ import { formatCurrency } from '@/lib/utils';
 
 export default async function AdminDashboardPage() {
   const session = await getCurrentSession();
-  const userName = session?.user?.name || 'Administrator';
+  if (!session) {
+    redirect('/login');
+  }
+  const userName = session.user.name || 'Administrator';
   const currentMonth = new Date().toISOString().substring(0, 7);
-  const isDemo = isDemoEmail(session?.user?.email);
-  const sessionId = session?.session?.id;
+  const isDemo = isDemoEmail(session.user.email);
+  const sessionId = session.session?.id;
 
   // High-performance concurrent SQL aggregates for heavy datasets (PRD Section 27)
   const demoExcludeEmp = sql`"id" NOT LIKE 'emp_demo_%' AND "id" NOT LIKE 'emp_001_%' AND "id" NOT LIKE 'emp_002_%' AND "id" NOT LIKE 'emp_003_%'`;

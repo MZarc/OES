@@ -89,9 +89,25 @@ export function Navbar({ userRole = 'EMPLOYEE', userName = 'User', employeeCode,
   async function handleSignOut() {
     setIsSigningOut(true);
     try {
-      await fetch('/api/auth/sign-out', { method: 'POST' });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+          document.cookie.split(';').forEach((c) => {
+            const eqPos = c.indexOf('=');
+            const name = eqPos > -1 ? c.substring(0, eqPos).trim() : c.trim();
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          });
+        } catch {}
+      }
+      await fetch('/api/auth/custom-sign-out', { method: 'POST' }).catch(() => {});
+      await fetch('/api/auth/sign-out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).catch(() => {});
     } finally {
-      window.location.href = '/login?fresh=1';
+      window.location.href = '/login?logout=1';
     }
   }
 

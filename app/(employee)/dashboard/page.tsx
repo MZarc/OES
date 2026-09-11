@@ -1,4 +1,5 @@
 import { getCurrentSession } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
 import { db } from '@/db/client';
 import { otRecords, expenses } from '@/db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
@@ -9,9 +10,12 @@ import { formatCurrency, formatDateDisplay } from '@/lib/utils';
 
 export default async function EmployeeDashboardPage() {
   const session = await getCurrentSession();
-  const userName = session?.user?.name || 'Meet Mistry';
-  const employeeCode = session?.employee?.employeeCode || 'EMP001';
-  const employeeId = session?.employee?.id;
+  if (!session) {
+    redirect('/login');
+  }
+  const userName = session.user.name || 'Employee';
+  const employeeCode = session.employee?.employeeCode || 'EMP001';
+  const employeeId = session.employee?.id;
 
   // Retrieve this month's statistics
   const currentMonth = new Date().toISOString().substring(0, 7);

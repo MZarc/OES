@@ -34,8 +34,14 @@ export function SessionInactivityWatchdog() {
     if (isLoggingOut.current) return;
     isLoggingOut.current = true;
     try {
-      localStorage.removeItem(STORAGE_KEY);
-      await fetch('/api/auth/sign-out', { method: 'POST' });
+      localStorage.clear();
+      sessionStorage.clear();
+      await fetch('/api/auth/custom-sign-out', { method: 'POST' }).catch(() => {});
+      await fetch('/api/auth/sign-out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).catch(() => {});
     } catch {
       // proceed with redirect even on network drop
     } finally {

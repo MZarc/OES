@@ -27,7 +27,16 @@ export default function LoginPage() {
         setSetupNotice(true);
       }
       if (params.get('fresh') === '1' || params.get('logout') === '1') {
-        fetch('/api/auth/sign-out', { method: 'POST' }).catch(() => {});
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+          document.cookie.split(';').forEach((c) => {
+            const eqPos = c.indexOf('=');
+            const name = eqPos > -1 ? c.substring(0, eqPos).trim() : c.trim();
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          });
+        } catch {}
+        fetch('/api/auth/custom-sign-out', { method: 'POST' }).catch(() => {});
       }
 
       // If system is uninitialized, immediately redirect to setup wizard
