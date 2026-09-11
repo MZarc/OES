@@ -71,12 +71,6 @@ export default function LoginPage() {
     await executeSignIn(email, password);
   }
 
-  function handleSelectDemo(demoEmail: string, demoPass: string) {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setError(null);
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
       <div className="relative max-w-md w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 overflow-hidden">
@@ -217,7 +211,8 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={async () => {
-                handleSelectDemo('demo@oes.com', 'demo123456');
+                setEmail('demo@oes.com');
+                setPassword('demo123456');
                 await executeSignIn('demo@oes.com', 'demo123456');
               }}
               disabled={loading || isRedirecting}
@@ -225,7 +220,7 @@ export default function LoginPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                  🚀 Log in as Demo Sandbox (`demo@oes.com`)
+                  🚀 Log in to Demo Sandbox (`demo@oes.com`)
                 </span>
                 <span className="text-[10px] font-bold text-blue-600 bg-blue-100/80 px-2 py-0.5 rounded-md">
                   1-Click Auto Login
@@ -238,23 +233,6 @@ export default function LoginPage() {
                 Email: <span className="font-semibold text-slate-700">demo@oes.com</span> • Password: <span className="font-semibold text-slate-700">demo123456</span>
               </div>
             </button>
-
-            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-[10px] font-medium text-slate-500">
-              <button
-                type="button"
-                onClick={() => handleSelectDemo('demo@oes.com', 'demo123456')}
-                className="py-1.5 px-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors"
-              >
-                Fill Admin Credentials
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectDemo('meet@oes.local', 'Employee@123')}
-                className="py-1.5 px-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors"
-              >
-                Fill Employee (Meet Mistry)
-              </button>
-            </div>
           </div>
         )}
       </div>

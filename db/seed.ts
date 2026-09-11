@@ -17,6 +17,7 @@ dotenv.config();
 
 export async function seedDatabase() {
   console.log('🌱 Starting database seeding...');
+  const { hashPassword } = await import('better-auth/crypto');
 
   // 1. Seed Shifts
   const initialShifts = [
@@ -179,7 +180,6 @@ export async function seedDatabase() {
     });
 
     // Create credential account with Better Auth hashed password
-    const { hashPassword } = await import('better-auth/crypto');
     const hashedPassword = await hashPassword('Admin@123456');
 
     await db.insert(accounts).values({
@@ -209,15 +209,15 @@ export async function seedDatabase() {
 
   // Seed Unified Demo Account (demo@oes.com) with Dual Admin & Employee capabilities
   const demoEmail = 'demo@oes.com';
-  const existingDemo = await db.query.users.findFirst({
+  const hashedDemoPassword = await hashPassword('demo123456');
+
+  let demoUser = await db.query.users.findFirst({
     where: eq(users.email, demoEmail),
   });
 
-  if (!existingDemo) {
-    const demoUserId = 'usr_demo_sandbox';
-    const { hashPassword } = await import('better-auth/crypto');
-    const hashedDemoPassword = await hashPassword('demo123456');
+  const demoUserId = demoUser ? demoUser.id : 'usr_demo_sandbox';
 
+  if (!demoUser) {
     await db.insert(users).values({
       id: demoUserId,
       name: 'Demo Sandbox User',
@@ -225,7 +225,17 @@ export async function seedDatabase() {
       emailVerified: true,
       role: 'SUPER_ADMIN',
     });
+  } else {
+    await db.update(users).set({ role: 'SUPER_ADMIN', name: 'Demo Sandbox User' }).where(eq(users.id, demoUserId));
+  }
 
+  const existingAccount = await db.query.accounts.findFirst({
+    where: eq(accounts.userId, demoUserId),
+  });
+
+  if (existingAccount) {
+    await db.update(accounts).set({ password: hashedDemoPassword }).where(eq(accounts.id, existingAccount.id));
+  } else {
     await db.insert(accounts).values({
       id: 'acc_demo_sandbox',
       userId: demoUserId,
@@ -233,7 +243,13 @@ export async function seedDatabase() {
       providerId: 'credential',
       password: hashedDemoPassword,
     });
+  }
 
+  const existingEmpProfile = await db.query.employeeProfiles.findFirst({
+    where: eq(employeeProfiles.userId, demoUserId),
+  });
+
+  if (!existingEmpProfile) {
     await db.insert(employeeProfiles).values({
       id: 'emp_demo_sandbox',
       userId: demoUserId,
@@ -246,12 +262,11 @@ export async function seedDatabase() {
       status: 'ACTIVE',
       dateJoined: '2026-01-01',
     });
-
-    console.log('✅ Live Demo Sandbox account seeded (demo@oes.com / demo123456)');
   }
 
+  console.log('✅ Live Demo Sandbox account seeded (demo@oes.com / demo123456)');
+
   // 6. Seed Demo Employees for Testing Workflow
-  const { hashPassword } = await import('better-auth/crypto');
   const demoEmpPassword = await hashPassword('Employee@123');
 
   const demoEmployees = [
