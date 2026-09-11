@@ -1,5 +1,5 @@
 // OES PWA Progressive Web App Service Worker
-const CACHE_NAME = 'oes-pwa-v2';
+const CACHE_NAME = 'oes-pwa-v3';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/favicon.ico',
@@ -37,44 +37,41 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
-  // Skip API, Server Actions, dynamic next data requests from hard cache
+  // NEVER intercept navigation requests or Next.js streaming/RSC chunks:
+  // Let the browser handle page navigation, SSR streaming, and redirects natively.
+  if (event.request.mode === 'navigate') {
+    return;
+  }
+
   const url = new URL(event.request.url);
   if (
     url.pathname.startsWith('/api') ||
     url.pathname.startsWith('/_next/data') ||
+    url.pathname.includes('_rsc') ||
+    event.request.headers.get('RSC') ||
     event.request.headers.get('x-nextjs-data')
   ) {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        // Cache successful responses for static assets
-        if (
-          networkResponse &&
-          networkResponse.status === 200 &&
-          networkResponse.type === 'basic' &&
-          (url.pathname.endsWith('.png') ||
-            url.pathname.endsWith('.ico') ||
-            url.pathname.endsWith('.css') ||
-            url.pathname.endsWith('.js'))
-        ) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        // Fallback to cache if offline
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
+  // Only cache and serve purely static image/icon assets
+  if (
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.ico') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.endsWith('.woff2')
+  ) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
-          return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+          return networkResponse;
         });
       })
-  );
+    );
+  }
 });

@@ -11,7 +11,11 @@ import { formatCurrency, formatDateDisplay } from '@/lib/utils';
 export default async function EmployeeDashboardPage() {
   const session = await getCurrentSession();
   if (!session) {
-    redirect('/login');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <script dangerouslySetInnerHTML={{ __html: `window.location.replace('/login');` }} />
+      </div>
+    );
   }
   const userName = session.user.name || 'Employee';
   const employeeCode = session.employee?.employeeCode || 'EMP001';

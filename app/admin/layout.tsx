@@ -10,10 +10,18 @@ export default async function AdminLayout({
 }) {
   const session = await getCurrentSession();
   if (!session) {
-    redirect('/login');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <script dangerouslySetInnerHTML={{ __html: `window.location.replace('/login');` }} />
+      </div>
+    );
   }
   if (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN') {
-    redirect('/dashboard');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <script dangerouslySetInnerHTML={{ __html: `window.location.replace('/dashboard');` }} />
+      </div>
+    );
   }
 
   return <>{children}</>;

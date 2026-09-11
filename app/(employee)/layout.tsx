@@ -10,7 +10,11 @@ export default async function EmployeeLayout({
 }) {
   const session = await getCurrentSession();
   if (!session) {
-    redirect('/login');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <script dangerouslySetInnerHTML={{ __html: `window.location.replace('/login');` }} />
+      </div>
+    );
   }
 
   return <>{children}</>;

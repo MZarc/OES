@@ -12,7 +12,11 @@ import { formatCurrency } from '@/lib/utils';
 export default async function AdminDashboardPage() {
   const session = await getCurrentSession();
   if (!session) {
-    redirect('/login');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <script dangerouslySetInnerHTML={{ __html: `window.location.replace('/login');` }} />
+      </div>
+    );
   }
   const userName = session.user.name || 'Administrator';
   const currentMonth = new Date().toISOString().substring(0, 7);

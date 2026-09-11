@@ -35,8 +35,8 @@ export default function LoginPage() {
             const name = eqPos > -1 ? c.substring(0, eqPos).trim() : c.trim();
             document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
           });
+          window.history.replaceState({}, '', '/login');
         } catch {}
-        fetch('/api/auth/custom-sign-out', { method: 'POST' }).catch(() => {});
       }
 
       // If system is uninitialized, immediately redirect to setup wizard
