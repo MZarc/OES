@@ -97,7 +97,7 @@ export function OTForm({ availableShifts = [], defaultShiftId = 'auto' }: OTForm
       if (res.success) {
         toast.success(`OT submitted successfully! Calculated ${res.payableHours.toFixed(2)} payable hours.`);
         setTimeout(() => {
-          router.push('/ot/history');
+          router.push('/dashboard');
         }, 1200);
       } else {
         setSubmitting(false);

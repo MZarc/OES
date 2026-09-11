@@ -10,6 +10,8 @@ import { logAuditEvent } from '@/lib/audit';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
+import { getAppBaseUrl } from '@/lib/utils';
+
 export interface MailSystemStatus {
   smtp: {
     host: string;
@@ -17,6 +19,7 @@ export interface MailSystemStatus {
     user?: string;
     from?: string;
     userConfigured: boolean;
+    hasSavedPassword: boolean;
     connected: boolean;
     error?: string;
   };
@@ -47,6 +50,26 @@ export async function saveSmtpConfigAction(config: {
     throw new Error('SMTP Host and Port are required.');
   }
 
+  // Fetch existing config from DB so we preserve the existing password if not re-entered!
+  const [existingRecord] = await db
+    .select()
+    .from(systemSettings)
+    .where(eq(systemSettings.key, 'smtp_config'))
+    .limit(1);
+
+  let existingConfig: any = {};
+  if (existingRecord?.value) {
+    try {
+      existingConfig = JSON.parse(existingRecord.value);
+    } catch {}
+  }
+
+  // Sanitize password: strip all whitespace/spaces (crucial for 16-char Gmail app passwords formatted as "xxxx xxxx xxxx xxxx")
+  const rawPass = config.pass?.trim();
+  const effectivePass = rawPass && rawPass.length > 0
+    ? rawPass.replace(/\s+/g, '')
+    : (existingConfig.pass ? String(existingConfig.pass).replace(/\s+/g, '') : undefined);
+
   // Auto-align From address if user is an email (e.g. Gmail/Outlook) to prevent SMTP 553 sender rejection
   let normalizedFrom = config.from?.trim();
   if ((!normalizedFrom || normalizedFrom.includes('@oes.local')) && config.user && config.user.includes('@')) {
@@ -54,7 +77,9 @@ export async function saveSmtpConfigAction(config: {
   }
 
   const finalConfig = {
+    ...existingConfig,
     ...config,
+    pass: effectivePass,
     from: normalizedFrom || config.from || 'OES Notifications <no-reply@oes.local>',
   };
 
@@ -96,11 +121,16 @@ export async function saveSmtpConfigAction(config: {
   if (testError) {
     return {
       success: true,
+      hasSavedPassword: Boolean(finalConfig.pass),
       warning: `SMTP settings saved to database, but connection verification returned: ${testError}`,
     };
   }
 
-  return { success: true, message: 'SMTP settings saved to database and verified successfully!' };
+  return { 
+    success: true, 
+    hasSavedPassword: Boolean(finalConfig.pass),
+    message: 'SMTP settings saved to database and verified successfully!' 
+  };
 }
 
 export async function getMailSystemStatusAction(): Promise<MailSystemStatus> {
@@ -165,6 +195,7 @@ export async function getMailSystemStatusAction(): Promise<MailSystemStatus> {
       user,
       from,
       userConfigured: Boolean(user),
+      hasSavedPassword: Boolean(pass && pass.trim().length > 0),
       connected: smtpConnected,
       error: smtpError,
     },
@@ -252,7 +283,7 @@ export async function resendTokenEmailAction(tokenId: string) {
   }
 
   const tok = record.tok;
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getAppBaseUrl();
   const activationUrl = `${baseUrl}/activate?email=${encodeURIComponent(tok.identifier)}&token=${tok.value}`;
 
   const recipientName = record.employeeName || tok.identifier;
@@ -278,7 +309,7 @@ export async function getActivationLinkAction(tokenId: string) {
     throw new Error('Token not found.');
   }
 
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getAppBaseUrl();
   const activationUrl = `${baseUrl}/activate?email=${encodeURIComponent(tok.identifier)}&token=${tok.value}`;
 
   return { activationUrl, email: tok.identifier };
@@ -444,7 +475,7 @@ export async function sendEmployeeInvitationAction(employeeId: string) {
     });
   }
 
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getAppBaseUrl();
   const activationUrl = `${baseUrl}/activate?email=${encodeURIComponent(emp.email)}&token=${tokenValue}`;
 
   try {

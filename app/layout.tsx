@@ -41,6 +41,8 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { NetworkStatusNotifier } from '@/components/ui/NetworkStatusNotifier';
 import { ServiceWorkerRegister } from '@/components/pwa/ServiceWorkerRegister';
 
+import { Footer } from '@/components/shared/Footer';
+
 export const viewport: Viewport = {
   themeColor: '#2563eb',
   width: 'device-width',
@@ -62,12 +64,15 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className={`min-h-screen bg-slate-50 antialiased font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900 ${poppins.className}`}>
+      <body className={`min-h-screen flex flex-col bg-slate-50 antialiased font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900 ${poppins.className}`}>
         <ToastProvider>
           <SessionInactivityWatchdog />
           <NetworkStatusNotifier />
           <ServiceWorkerRegister />
-          {children}
+          <div className="flex-1 flex flex-col">
+            {children}
+          </div>
+          <Footer />
         </ToastProvider>
       </body>
     </html>

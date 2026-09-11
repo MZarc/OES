@@ -25,6 +25,7 @@ import {
   SlidersHorizontal,
   Globe,
   Loader2,
+  Home,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -158,7 +159,17 @@ export function Navbar({ userRole = 'EMPLOYEE', userName = 'User', employeeCode,
         </nav>
 
         {/* Right Section: Circular Profile Thumbnail & Dropdown */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Mobile Home Button (Mobile UI only) */}
+          <Link
+            href={isAdmin && inAdminSection ? '/admin/dashboard' : '/dashboard'}
+            className="lg:hidden flex items-center justify-center h-9 w-9 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-slate-100 transition-colors focus:outline-none"
+            aria-label="Home"
+            title="Go to Home / Dashboard"
+          >
+            <Home className="h-5 w-5" />
+          </Link>
+
           {/* User Profile Circular Thumbnail & Dropdown */}
           <div className="relative flex items-center" ref={dropdownRef}>
             <button
@@ -292,6 +303,22 @@ export function Navbar({ userRole = 'EMPLOYEE', userName = 'User', employeeCode,
               </Link>
             </div>
           )}
+
+          {/* Mobile Drawer Developer Credit */}
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between px-3 text-[11px] text-slate-500">
+            <span className="flex items-center gap-1 font-medium">
+              <span>Developed by</span>
+              <a
+                href="https://meetmistry.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-blue-600 hover:underline"
+              >
+                Meet Mistry
+              </a>
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono">v1.0</span>
+          </div>
         </div>
       )}
 

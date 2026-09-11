@@ -157,7 +157,7 @@ export function ExpenseForm() {
 
       toast.success('Expense submitted successfully!');
       setTimeout(() => {
-        router.push('/expenses/history');
+        router.push('/dashboard');
       }, 1200);
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit expense.');

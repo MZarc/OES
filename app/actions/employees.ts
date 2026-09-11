@@ -8,6 +8,7 @@ import { emailService } from '@/lib/email';
 import { invitationQueue } from '@/lib/queue';
 import { logAuditEvent } from '@/lib/audit';
 import { requireAdmin } from '@/lib/auth/session';
+import { getAppBaseUrl } from '@/lib/utils';
 import crypto from 'crypto';
 
 export async function getAvailableShiftsAction() {
@@ -195,7 +196,7 @@ export async function executeEmployeeImportAction(params: {
       });
 
       // Dispatch onboarding invitation email directly
-      const baseUrl = process.env.NEXTAUTH_URL || process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = getAppBaseUrl();
       const activationUrl = `${baseUrl}/activate?email=${encodeURIComponent(row.email)}&token=${activationToken}`;
       try {
         await emailService.sendInvitationEmail(row.email, row.fullName, activationUrl);
@@ -336,6 +337,23 @@ export async function createEmployeeAction(data: {
     value: activationToken,
     expiresAt: tokenExpiresAt,
   });
+
+  // Dispatch onboarding activation email immediately
+  const baseUrl = getAppBaseUrl();
+  const activationUrl = `${baseUrl}/activate?email=${encodeURIComponent(email)}&token=${activationToken}`;
+  try {
+    await emailService.sendInvitationEmail(email, data.fullName.trim(), activationUrl);
+  } catch (mailErr: any) {
+    console.warn(`[Create Employee] Direct invitation send deferred for ${email}:`, mailErr?.message);
+    try {
+      await invitationQueue.add('send-invitation', {
+        employeeId: empId,
+        email,
+        fullName: data.fullName.trim(),
+        activationToken,
+      });
+    } catch (qErr) {}
+  }
 
   await logAuditEvent({
     actorUserId: admin.user.id,
@@ -815,7 +833,7 @@ export async function sendBulkInvitationsAction(employeeIds: string[]) {
   await emailService.ensureConfigLoaded();
 
   let sentCount = 0;
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getAppBaseUrl();
 
   for (let idx = 0; idx < targets.length; idx++) {
     const emp = targets[idx];

@@ -190,7 +190,7 @@ export function EmployeesDirectoryView() {
     setActionLoading(true);
     try {
       await createEmployeeAction(formData);
-      toast.success(`Employee ${formData.fullName} (${formData.employeeCode}) created successfully.`);
+      toast.success(`Employee ${formData.fullName} (${formData.employeeCode}) created and activation invite sent!`);
       setShowAddModal(false);
       setFormData({
         employeeCode: '',

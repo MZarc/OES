@@ -470,13 +470,20 @@ export function MailSystemView({ initialStatus }: MailSystemViewProps) {
 
             {/* Password / App Password with toggle */}
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Password / 16-Character App Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-semibold text-slate-700">
+                  Password / 16-Character App Password
+                </label>
+                {status?.smtp?.hasSavedPassword && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <Check className="h-3 w-3 text-emerald-600" /> Saved in Database
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••••••••••"
+                  placeholder={status?.smtp?.hasSavedPassword ? "•••••••••••••••• (Leave blank to keep saved password)" : "e.g. abcd efgh ijkl mnop"}
                   value={smtpForm.pass}
                   onChange={(e) => setSmtpForm({ ...smtpForm, pass: e.target.value })}
                   className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -490,6 +497,11 @@ export function MailSystemView({ initialStatus }: MailSystemViewProps) {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {status?.smtp?.hasSavedPassword
+                  ? 'Your 16-character app password is saved. Leave blank to keep it, or enter a new one to update.'
+                  : 'Enter your 16-character Gmail App Password (spaces will be automatically removed).'}
+              </span>
             </div>
 
             {/* From Email Address */}

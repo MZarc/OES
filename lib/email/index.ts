@@ -31,8 +31,8 @@ class EmailService {
     this.initTransporter();
   }
 
-  public async ensureConfigLoaded(): Promise<void> {
-    if (this.dbLoaded) return;
+  public async ensureConfigLoaded(forceReload = false): Promise<void> {
+    if (this.dbLoaded && this.currentConfig.pass && !forceReload) return;
     try {
       const { db } = await import('@/db/client');
       const { systemSettings } = await import('@/db/schema');
@@ -47,6 +47,9 @@ class EmailService {
       if (record && record.value) {
         const saved = JSON.parse(record.value);
         if (saved && saved.host && saved.port) {
+          if (saved.pass) {
+            saved.pass = String(saved.pass).replace(/\s+/g, '');
+          }
           this.updateConfig(saved);
         }
       }
@@ -68,7 +71,15 @@ class EmailService {
   }
 
   public updateConfig(config: Partial<SmtpConfig>) {
-    this.currentConfig = { ...this.currentConfig, ...config };
+    const sanitizedPass = config.pass !== undefined && config.pass !== null && String(config.pass).trim() !== ''
+      ? String(config.pass).replace(/\s+/g, '')
+      : this.currentConfig.pass;
+
+    this.currentConfig = { 
+      ...this.currentConfig, 
+      ...config,
+      pass: sanitizedPass || undefined,
+    };
     process.env.SMTP_HOST = this.currentConfig.host;
     process.env.SMTP_PORT = String(this.currentConfig.port);
     if (this.currentConfig.user) process.env.SMTP_USER = this.currentConfig.user;

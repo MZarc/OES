@@ -68,3 +68,30 @@ export function escapeHtml(str: string | number | null | undefined): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+/**
+ * Resolves the canonical public base URL of the application.
+ * Safely handles custom domains, Vercel deployments, and local development.
+ */
+export function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, '');
+  }
+  if (process.env.APP_URL) {
+    return process.env.APP_URL.replace(/\/+$/, '');
+  }
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL.replace(/\/+$/, '');
+  }
+  if (process.env.BETTER_AUTH_URL) {
+    return process.env.BETTER_AUTH_URL.replace(/\/+$/, '');
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.replace(/\/+$/, '')}`;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/+$/, '')}`;
+  }
+  return 'http://localhost:3000';
+}
+
