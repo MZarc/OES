@@ -274,7 +274,15 @@ export function OTHistoryView() {
                           <button
                             onClick={() => {
                               try {
-                                setActiveTrace(JSON.parse(r.calculationSnapshot as string));
+                                const parsed = JSON.parse(r.calculationSnapshot as string);
+                                setActiveTrace({
+                                  ...parsed,
+                                  isSunday: parsed.isSunday ?? r.isSunday,
+                                  isHoliday: parsed.isHoliday ?? r.isHoliday,
+                                  holidayName: parsed.holidayName ?? r.holidayName,
+                                  multiplier: parsed.multiplier ?? r.multiplier,
+                                  workDate: parsed.workDate ?? r.workDate,
+                                });
                               } catch (e) {
                                 console.error(e);
                               }
@@ -368,7 +376,15 @@ export function OTHistoryView() {
                           <button
                             onClick={() => {
                               try {
-                                setActiveTrace(JSON.parse(r.calculationSnapshot as string));
+                                const parsed = JSON.parse(r.calculationSnapshot as string);
+                                setActiveTrace({
+                                  ...parsed,
+                                  isSunday: parsed.isSunday ?? r.isSunday,
+                                  isHoliday: parsed.isHoliday ?? r.isHoliday,
+                                  holidayName: parsed.holidayName ?? r.holidayName,
+                                  multiplier: parsed.multiplier ?? r.multiplier,
+                                  workDate: parsed.workDate ?? r.workDate,
+                                });
                               } catch (e) {
                                 console.error(e);
                               }
@@ -496,9 +512,9 @@ export function OTHistoryView() {
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600">
               <span className="font-semibold text-slate-700">Classification: </span>
               {activeTrace.isHoliday
-                ? `Official Holiday (${activeTrace.holidayName})`
-                : activeTrace.isSunday
-                ? 'Sunday (1.25× Weekend Multiplier)'
+                ? `Official Holiday (${activeTrace.holidayName || 'Holiday'})`
+                : (activeTrace.isSunday || activeTrace.multiplier > 1.0)
+                ? `Sunday (${(activeTrace.multiplier || 1.25).toFixed(2)}× Weekend Multiplier)`
                 : 'Regular Working Day (1.00× Multiplier)'}
             </div>
 

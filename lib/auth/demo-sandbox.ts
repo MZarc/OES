@@ -23,6 +23,40 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
   });
 
   if (existing) {
+    // Auto-heal existing session Sunday claim if date or snapshot was outdated
+    try {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const daysSinceSunday = dayOfWeek === 0 ? 7 : dayOfWeek;
+      const lastSunday = new Date(now.getTime() - daysSinceSunday * 86400000).toISOString().split('T')[0];
+
+      await db.update(otRecords).set({
+        workDate: lastSunday,
+        isSunday: true,
+        multiplier: 1.25,
+        payableHours: 6.25,
+        calculationSnapshot: JSON.stringify({
+          workDate: lastSunday,
+          shiftName: 'General Shift',
+          scheduledStart: '08:30',
+          scheduledEnd: '17:15',
+          otBoundary: '17:30',
+          startTime: '09:00',
+          endTime: '14:00',
+          rawHours: 5.0,
+          rawDurationMinutes: 300,
+          multiplier: 1.25,
+          payableHours: 6.25,
+          isSunday: true,
+          isHoliday: false,
+          ruleVersion: '2026-v1',
+          shiftVersion: '2026-v1',
+          calculatedAt: new Date().toISOString(),
+        }),
+      }).where(eq(otRecords.id, `ot_demo_3_${sessionId}`));
+    } catch (e) {
+      console.warn('Auto-heal demo claim non-fatal error:', e);
+    }
     return demoEmpId;
   }
 
@@ -141,10 +175,14 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
   }
 
   // 8. Seed Prefilled OT Submissions for this session
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0];
-  const lastSunday = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0];
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const daysSinceSunday = dayOfWeek === 0 ? 7 : dayOfWeek;
+  const lastSunday = new Date(now.getTime() - daysSinceSunday * 86400000).toISOString().split('T')[0];
+
+  const today = now.toISOString().split('T')[0];
+  const yesterday = new Date(now.getTime() - 86400000).toISOString().split('T')[0];
+  const threeDaysAgo = new Date(now.getTime() - 3 * 86400000).toISOString().split('T')[0];
 
   // Demo User - Pending Claim (SUBMITTED)
   await db.insert(otRecords).values({
@@ -162,6 +200,7 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
     isSunday: false,
     isHoliday: false,
     calculationSnapshot: JSON.stringify({
+      workDate: today,
       shiftName: 'General Shift',
       scheduledStart: '08:30',
       scheduledEnd: '17:15',
@@ -172,6 +211,8 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
       rawDurationMinutes: 210,
       multiplier: 1.0,
       payableHours: 3.5,
+      isSunday: false,
+      isHoliday: false,
       ruleVersion: '2026-v1',
       shiftVersion: '2026-v1',
       calculatedAt: new Date().toISOString(),
@@ -195,6 +236,7 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
     isSunday: false,
     isHoliday: false,
     calculationSnapshot: JSON.stringify({
+      workDate: threeDaysAgo,
       shiftName: 'General Shift',
       scheduledStart: '08:30',
       scheduledEnd: '17:15',
@@ -205,6 +247,8 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
       rawDurationMinutes: 240,
       multiplier: 1.0,
       payableHours: 4.0,
+      isSunday: false,
+      isHoliday: false,
       ruleVersion: '2026-v1',
       shiftVersion: '2026-v1',
       calculatedAt: new Date().toISOString(),
@@ -228,6 +272,7 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
     isSunday: true,
     isHoliday: false,
     calculationSnapshot: JSON.stringify({
+      workDate: lastSunday,
       shiftName: 'General Shift',
       scheduledStart: '08:30',
       scheduledEnd: '17:15',
@@ -238,6 +283,8 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
       rawDurationMinutes: 300,
       multiplier: 1.25,
       payableHours: 6.25,
+      isSunday: true,
+      isHoliday: false,
       ruleVersion: '2026-v1',
       shiftVersion: '2026-v1',
       calculatedAt: new Date().toISOString(),
@@ -261,6 +308,7 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
     isSunday: false,
     isHoliday: false,
     calculationSnapshot: JSON.stringify({
+      workDate: yesterday,
       shiftName: 'First Shift',
       scheduledStart: '07:00',
       scheduledEnd: '15:00',
@@ -271,6 +319,8 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
       rawDurationMinutes: 240,
       multiplier: 1.0,
       payableHours: 4.0,
+      isSunday: false,
+      isHoliday: false,
       ruleVersion: '2026-v1',
       shiftVersion: '2026-v1',
       calculatedAt: new Date().toISOString(),
