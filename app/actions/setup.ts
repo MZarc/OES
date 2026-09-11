@@ -11,7 +11,8 @@ export async function checkSystemInitializedAction(): Promise<{ initialized: boo
   try {
     const adminCount = await db
       .select({ count: sql<number>`count(*)::int` })
-      .from(users);
+      .from(users)
+      .where(sql`${users.email} != 'demo@oes.com' AND ${users.id} != 'usr_demo_sandbox'`);
 
     const count = Number(adminCount[0]?.count ?? 0);
     return { initialized: count > 0 };
@@ -111,26 +112,9 @@ export async function initializeSuperAdminAction(formData: {
 export async function ensureDemoAccountAction(): Promise<{ success: boolean; error?: string }> {
   try {
     const demoEmail = 'demo@oes.com';
-
-    // Fast path: check if demo user already exists and has a credential account
-    const demoUser = await db.query.users.findFirst({
-      where: eq(users.email, demoEmail),
-    });
-
-    if (demoUser) {
-      const existingAcc = await db.query.accounts.findFirst({
-        where: eq(accounts.userId, demoUser.id),
-      });
-      if (existingAcc) {
-        // Demo account fully provisioned — skip all setup
-        return { success: true };
-      }
-    }
-
-    // Cold path: first-time demo setup (runs once per database lifecycle)
     const hashedPassword = await hashPassword('demo123456');
 
-    // Batch: ensure shifts exist
+    // 1. Ensure all shifts exist
     const initialShifts = [
       { id: 'shift_first_v1', code: 'FIRST', name: 'First Shift', startTime: '07:00', endTime: '15:00', regularOtStartTime: '15:00', crossesMidnight: false, version: '2026-v1', active: true },
       { id: 'shift_general_v1', code: 'GENERAL', name: 'General Shift', startTime: '08:30', endTime: '17:15', regularOtStartTime: '17:30', crossesMidnight: false, version: '2026-v1', active: true },
@@ -141,13 +125,13 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
       await db.insert(shifts).values(s).onConflictDoNothing();
     }
 
-    // OT Rules
+    // 2. Ensure OT Rules exist
     await db.insert(otRules).values({
       id: 'ot_rule_2026_v1', version: '2026-v1', weekdayMultiplier: 1.0, sundayMultiplier: 1.25,
       holidayMultiplier: 1.25, roundingPolicy: 'UP_TO_NEXT_1_HOUR', timezone: 'Asia/Kolkata', minOtMinutes: 0, isCurrent: true,
     }).onConflictDoNothing();
 
-    // Expense Categories
+    // 3. Ensure Expense Categories exist
     const categories = ['Travel', 'Food', 'Accommodation', 'Transport', 'Office Supplies', 'Communication', 'Medical', 'Other'];
     for (const cat of categories) {
       await db.insert(expenseCategories).values({
@@ -156,7 +140,11 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
       }).onConflictDoNothing();
     }
 
-    // User
+    // 4. Ensure demo user exists
+    let demoUser = await db.query.users.findFirst({
+      where: eq(users.email, demoEmail),
+    });
+
     const demoUserId = demoUser?.id || 'usr_demo_sandbox';
     if (!demoUser) {
       await db.insert(users).values({
@@ -167,7 +155,7 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
       await db.update(users).set({ role: 'SUPER_ADMIN', emailVerified: true }).where(eq(users.id, demoUserId));
     }
 
-    // Account — upsert, never delete existing
+    // 5. Ensure credential account exists with password demo123456
     const existingAcc = await db.query.accounts.findFirst({
       where: eq(accounts.userId, demoUserId),
     });
@@ -180,13 +168,8 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
       }).onConflictDoNothing();
     }
 
-    // Employee profile
-    await db.insert(employeeProfiles).values({
-      id: 'emp_demo_sandbox', userId: demoUserId, employeeCode: 'DEMO001',
-      fullName: 'Demo Sandbox User', email: demoEmail, department: 'Engineering',
-      designation: 'Demo Admin & Employee', shiftId: 'shift_general_v1',
-      status: 'ACTIVE', dateJoined: '2026-01-01',
-    }).onConflictDoNothing();
+    // 6. Delete any stale static emp_demo_sandbox profile so it doesn't collide with session profiles
+    await db.delete(employeeProfiles).where(eq(employeeProfiles.id, 'emp_demo_sandbox'));
 
     return { success: true };
   } catch (error: any) {

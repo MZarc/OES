@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Mail, AlertCircle, Loader2, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
-import { ensureDemoAccountAction } from '@/app/actions/setup';
+import { checkSystemInitializedAction, ensureDemoAccountAction } from '@/app/actions/setup';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,8 +29,15 @@ export default function LoginPage() {
       if (params.get('fresh') === '1' || params.get('logout') === '1') {
         fetch('/api/auth/sign-out', { method: 'POST' }).catch(() => {});
       }
+
+      // If system is uninitialized, immediately redirect to setup wizard
+      checkSystemInitializedAction().then(({ initialized }) => {
+        if (!initialized) {
+          router.replace('/setup');
+        }
+      }).catch(() => {});
     }
-  }, []);
+  }, [router]);
 
   async function executeSignIn(targetEmail: string, targetPassword: string) {
     setLoading(true);
@@ -195,9 +204,16 @@ export default function LoginPage() {
                 setLoading(true);
                 setError(null);
                 try {
-                  await ensureDemoAccountAction();
-                } catch (e) {
-                  // ignore non-critical errors
+                  const prep = await ensureDemoAccountAction();
+                  if (!prep.success) {
+                    setError(prep.error || 'Failed to prepare demo account.');
+                    setLoading(false);
+                    return;
+                  }
+                } catch (e: any) {
+                  setError(e.message || 'Demo preparation error.');
+                  setLoading(false);
+                  return;
                 }
                 setEmail('demo@oes.com');
                 setPassword('demo123456');

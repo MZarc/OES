@@ -74,7 +74,7 @@ export async function getCurrentSession(): Promise<AuthenticatedContext | null> 
       employee: empProfile
         ? {
             id: empProfile.id,
-            employeeCode: empProfile.employeeCode,
+            employeeCode: isDemoEmail(session.user.email) ? 'DEMO001' : empProfile.employeeCode,
             fullName: empProfile.fullName,
             department: empProfile.department,
             shiftId: empProfile.shiftId,

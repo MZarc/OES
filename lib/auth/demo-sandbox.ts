@@ -97,13 +97,20 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
     }).onConflictDoNothing();
   }
 
+  // Clean up any old static profile
+  await db.delete(employeeProfiles).where(eq(employeeProfiles.id, 'emp_demo_sandbox'));
+
+  const safeSession = sessionId.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase() || 'SESSION';
+  const demoEmpCode = `DEMO_${safeSession}`;
+  const demoEmpEmail = `demo_${safeSession}@oes.local`;
+
   // 6. Create Session-Isolated Employee Profile for demo@oes.com
   await db.insert(employeeProfiles).values({
     id: demoEmpId,
     userId: demoUserId,
-    employeeCode: 'DEMO001',
+    employeeCode: demoEmpCode,
     fullName: 'Demo Sandbox User',
-    email: 'demo@oes.com',
+    email: demoEmpEmail,
     department: 'Engineering',
     designation: 'Demo Admin & Employee',
     shiftId,
@@ -113,9 +120,9 @@ export async function provisionDemoSessionSandbox(sessionId: string): Promise<st
 
   // 7. Create Session-Isolated Team Employee Profiles for Admin Roster Showcase
   const teamMembers = [
-    { empId: `emp_001_${sessionId}`, code: 'EMP001', name: 'Meet Mistry', email: `meet_${sessionId}@oes.local`, dept: 'Engineering', desig: 'Senior Engineer', shift: 'shift_first_v1' },
-    { empId: `emp_002_${sessionId}`, code: 'EMP002', name: 'John Wick', email: `john_${sessionId}@oes.local`, dept: 'Production', desig: 'Production Supervisor', shift: 'shift_general_v1' },
-    { empId: `emp_003_${sessionId}`, code: 'EMP003', name: 'Bruce Wayne', email: `bruce_${sessionId}@oes.local`, dept: 'Assembly', desig: 'Assembly Specialist', shift: 'shift_night_v1' },
+    { empId: `emp_001_${sessionId}`, code: `EMP1_${safeSession}`, name: 'Meet Mistry', email: `meet_${safeSession}@oes.local`, dept: 'Engineering', desig: 'Senior Engineer', shift: 'shift_first_v1' },
+    { empId: `emp_002_${sessionId}`, code: `EMP2_${safeSession}`, name: 'John Wick', email: `john_${safeSession}@oes.local`, dept: 'Production', desig: 'Production Supervisor', shift: 'shift_general_v1' },
+    { empId: `emp_003_${sessionId}`, code: `EMP3_${safeSession}`, name: 'Bruce Wayne', email: `bruce_${safeSession}@oes.local`, dept: 'Assembly', desig: 'Assembly Specialist', shift: 'shift_night_v1' },
   ];
 
   for (const m of teamMembers) {
