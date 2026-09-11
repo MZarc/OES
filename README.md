@@ -143,7 +143,7 @@ OES features a strict separation between **Sandbox/Development** and **Pristine 
 | Capability | 🛠️ Development / Sandbox | 🏢 Real-World Production |
 | :--- | :--- | :--- |
 | **Database Seed** | `npm run db:seed` | `npm run db:fresh` |
-| **User Directory** | Demo sandbox (`demo@oes.com`, `meet@oes.local`) | **0 users** (Pristine clean state) |
+| **User Directory** | Demo sandbox (`demo@oes.com`) | **0 users** (Pristine clean state) |
 | **Admin Setup** | Pre-seeded demo / admin | **Web Setup Wizard (`/setup`)** |
 | **Login Screen** | One-Click Demo Credentials grid | Clean corporate portal sign-in |
 | **Sample Data** | Prefilled demo claims & rosters | Empty queues awaiting real staff |
