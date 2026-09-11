@@ -153,9 +153,11 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
       where: eq(users.email, demoEmail),
     });
 
-    const demoUserId = demoUser ? demoUser.id : 'usr_demo_sandbox';
+    let demoUserId: string;
 
     if (!demoUser) {
+      demoUserId = 'usr_demo_sandbox';
+      await db.delete(users).where(eq(users.id, demoUserId));
       await db.insert(users).values({
         id: demoUserId,
         name: 'Demo Sandbox User',
@@ -163,26 +165,20 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
         emailVerified: true,
         role: 'SUPER_ADMIN',
       });
-    } else if (demoUser.role !== 'SUPER_ADMIN') {
-      await db.update(users).set({ role: 'SUPER_ADMIN', name: 'Demo Sandbox User' }).where(eq(users.id, demoUserId));
+    } else {
+      demoUserId = demoUser.id;
+      await db.update(users).set({ role: 'SUPER_ADMIN', name: 'Demo Sandbox User', emailVerified: true }).where(eq(users.id, demoUserId));
     }
 
     // 5. Ensure credential account exists with password demo123456
-    const existingAcc = await db.query.accounts.findFirst({
-      where: eq(accounts.userId, demoUserId),
+    await db.delete(accounts).where(eq(accounts.userId, demoUserId));
+    await db.insert(accounts).values({
+      id: `acc_demo_${crypto.randomUUID()}`,
+      userId: demoUserId,
+      accountId: demoUserId,
+      providerId: 'credential',
+      password: hashedPassword,
     });
-
-    if (existingAcc) {
-      await db.update(accounts).set({ password: hashedPassword }).where(eq(accounts.id, existingAcc.id));
-    } else {
-      await db.insert(accounts).values({
-        id: 'acc_demo_sandbox',
-        userId: demoUserId,
-        accountId: demoUserId,
-        providerId: 'credential',
-        password: hashedPassword,
-      });
-    }
 
     // 6. Ensure base employee profile DEMO001 exists
     const existingEmp = await db.query.employeeProfiles.findFirst({
@@ -201,7 +197,7 @@ export async function ensureDemoAccountAction(): Promise<{ success: boolean; err
         shiftId: 'shift_general_v1',
         status: 'ACTIVE',
         dateJoined: '2026-01-01',
-      });
+      }).onConflictDoNothing();
     }
 
     return { success: true };
