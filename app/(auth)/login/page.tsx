@@ -197,23 +197,27 @@ export default function LoginPage() {
 
         {/* Live Demo Sandbox Section */}
         {process.env.NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS !== 'false' && (
-          <div className="mt-5 pt-4 border-t border-slate-100">
+          <div className="mt-5 pt-4 border-t border-slate-100 text-center">
             <button
               type="button"
               onClick={async () => {
                 setLoading(true);
                 setError(null);
-                await ensureDemoAccountAction();
+                try {
+                  await ensureDemoAccountAction();
+                } catch (e) {
+                  // ignore non-critical errors
+                }
                 setEmail('demo@oes.com');
                 setPassword('demo123456');
                 await executeSignIn('demo@oes.com', 'demo123456');
               }}
               disabled={loading || isRedirecting}
-              className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-2.5 px-4 rounded-lg text-sm font-semibold hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-2 focus:outline-none disabled:opacity-50 transition-colors cursor-pointer inline-flex items-center gap-1.5"
             >
               {loading || isRedirecting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   <span>Signing in...</span>
                 </>
               ) : (
