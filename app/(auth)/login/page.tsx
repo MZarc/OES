@@ -53,7 +53,7 @@ export default function LoginPage() {
 
       if (res.ok) {
         setIsRedirecting(true);
-        window.location.href = '/';
+        window.location.href = targetEmail.trim().toLowerCase() === 'demo@oes.com' ? '/dashboard' : '/';
         return; // do not clear loading state
       } else {
         const data = await res.json().catch(() => ({}));

@@ -15,6 +15,11 @@ export default async function HomePage() {
     redirect('/login');
   }
 
+  // Demo user defaults to Employee Portal (/dashboard) for first-time showcase
+  if (session.user.email === 'demo@oes.com') {
+    redirect('/dashboard');
+  }
+
   if (session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN') {
     redirect('/admin/dashboard');
   }

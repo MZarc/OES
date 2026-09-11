@@ -1,0 +1,2 @@
+$env:DATABASE_URL="postgresql://postgres.peejhmelajjpzeqahaxw:[YOUR_SUPABASE_PROJECT_PASSWORD]@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require"
+npm run db:fresh
