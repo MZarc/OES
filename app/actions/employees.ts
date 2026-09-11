@@ -883,9 +883,16 @@ export async function sendBulkInvitationsAction(employeeIds: string[]) {
 }
 
 export async function getEmployeesListAction(query?: string, status?: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
 
   const conditions = [];
+
+  if (isDemo && admin.session?.id) {
+    conditions.push(sql`${employeeProfiles.id} LIKE ${'%' + admin.session.id}`);
+  } else if (!isDemo) {
+    conditions.push(sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`);
+  }
 
   if (status && status !== 'ALL') {
     if (status === 'DEACTIVATED') {
@@ -940,13 +947,20 @@ export async function getEmployeesPaginatedAction(params?: {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const isDemo = admin.user.email === 'demo@oes.com';
 
   const page = Math.max(1, params?.page || 1);
   const limit = Math.min(100, Math.max(1, params?.limit || 15));
   const offset = (page - 1) * limit;
 
   const conditions = [];
+
+  if (isDemo && admin.session?.id) {
+    conditions.push(sql`${employeeProfiles.id} LIKE ${'%' + admin.session.id}`);
+  } else if (!isDemo) {
+    conditions.push(sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`);
+  }
 
   if (params?.status && params.status !== 'ALL') {
     if (params.status === 'DEACTIVATED') {

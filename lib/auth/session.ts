@@ -4,7 +4,12 @@ import { db } from '@/db/client';
 import { employeeProfiles, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
+import { isDemoEmail, provisionDemoSessionSandbox, getDemoEmployeeId } from './demo-sandbox';
+
 export interface AuthenticatedContext {
+  session?: {
+    id: string;
+  };
   user: {
     id: string;
     email: string;
@@ -35,12 +40,31 @@ export async function getCurrentSession(): Promise<AuthenticatedContext | null> 
       return null;
     }
 
-    // Fetch matching employee profile
-    const empProfile = await db.query.employeeProfiles.findFirst({
-      where: eq(employeeProfiles.userId, session.user.id),
-    });
+    const sessionId = session.session.id;
+    let empProfile;
+
+    if (isDemoEmail(session.user.email)) {
+      const demoEmpId = getDemoEmployeeId(sessionId);
+      empProfile = await db.query.employeeProfiles.findFirst({
+        where: eq(employeeProfiles.id, demoEmpId),
+      });
+
+      if (!empProfile) {
+        await provisionDemoSessionSandbox(sessionId);
+        empProfile = await db.query.employeeProfiles.findFirst({
+          where: eq(employeeProfiles.id, demoEmpId),
+        });
+      }
+    } else {
+      empProfile = await db.query.employeeProfiles.findFirst({
+        where: eq(employeeProfiles.userId, session.user.id),
+      });
+    }
 
     return {
+      session: {
+        id: sessionId,
+      },
       user: {
         id: session.user.id,
         email: session.user.email,

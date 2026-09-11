@@ -249,7 +249,15 @@ export async function getMyOTRecordsPaginatedAction(params?: {
 }
 
 export async function getAdminPendingOTAction() {
-  await requireAdmin();
+  const ctx = await requireAdmin();
+  const isDemo = ctx.user.email === 'demo@oes.com';
+
+  const conditions = [eq(otRecords.status, 'SUBMITTED')];
+  if (isDemo && ctx.session?.id) {
+    conditions.push(sql`${employeeProfiles.id} LIKE ${'%' + ctx.session.id}`);
+  } else if (!isDemo) {
+    conditions.push(sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`);
+  }
 
   const records = await db
     .select({
@@ -275,6 +283,7 @@ export async function getAdminPendingOTAction() {
     .from(otRecords)
     .innerJoin(employeeProfiles, eq(otRecords.employeeId, employeeProfiles.id))
     .innerJoin(shifts, eq(otRecords.shiftId, shifts.id))
+    .where(and(...conditions))
     .orderBy(desc(otRecords.submittedAt));
 
   return records;
@@ -288,13 +297,20 @@ export async function getAdminOTPaginatedAction(params?: {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }) {
-  await requireAdmin();
+  const ctx = await requireAdmin();
+  const isDemo = ctx.user.email === 'demo@oes.com';
 
   const page = Math.max(1, params?.page || 1);
   const limit = Math.min(100, Math.max(1, params?.limit || 15));
   const offset = (page - 1) * limit;
 
   const conditions = [];
+  if (isDemo && ctx.session?.id) {
+    conditions.push(sql`${employeeProfiles.id} LIKE ${'%' + ctx.session.id}`);
+  } else if (!isDemo) {
+    conditions.push(sql`${employeeProfiles.id} NOT LIKE 'emp_demo_%' AND ${employeeProfiles.id} NOT LIKE 'emp_001_%' AND ${employeeProfiles.id} NOT LIKE 'emp_002_%' AND ${employeeProfiles.id} NOT LIKE 'emp_003_%'`);
+  }
+
   if (params?.status && params.status !== 'ALL') {
     conditions.push(eq(otRecords.status, params.status));
   }
