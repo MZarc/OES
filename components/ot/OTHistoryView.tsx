@@ -136,10 +136,46 @@ export function OTHistoryView() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto justify-between sm:justify-end">
+        {/* Mobile Controls Grid (Zero horizontal scroll) */}
+        <div className="grid grid-cols-2 gap-2 w-full sm:hidden">
+          <CustomSelect
+            size="sm"
+            className="w-full"
+            value={`${sortBy}_${sortOrder}`}
+            onChange={(val) => {
+              const [b, o] = val.split('_');
+              setSortBy(b);
+              setSortOrder(o as 'asc' | 'desc');
+              setCurrentPage(1);
+            }}
+            options={[
+              { value: 'submittedAt_desc', label: 'Submitted (New)' },
+              { value: 'submittedAt_asc', label: 'Submitted (Old)' },
+              { value: 'workDate_desc', label: 'Work Date (New)' },
+              { value: 'workDate_asc', label: 'Work Date (Old)' },
+              { value: 'payableHours_desc', label: 'Hours (High)' },
+              { value: 'payableHours_asc', label: 'Hours (Low)' },
+            ]}
+          />
+          <CustomSelect
+            size="sm"
+            className="w-full"
+            value={statusFilter}
+            onChange={(st) => handleStatusChange(st)}
+            options={[
+              { value: 'ALL', label: 'All Records' },
+              { value: 'SUBMITTED', label: 'Submitted' },
+              { value: 'APPROVED', label: 'Approved' },
+              { value: 'REJECTED', label: 'Rejected' },
+            ]}
+          />
+        </div>
+
+        {/* Desktop Controls (Fast 1-click pills) */}
+        <div className="hidden sm:flex items-center gap-2">
           {/* Sort Dropdown */}
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
-            <span className="font-medium text-slate-500 hidden sm:inline">Sort:</span>
+            <span className="font-medium text-slate-500">Sort:</span>
             <CustomSelect
               size="sm"
               value={`${sortBy}_${sortOrder}`}
@@ -160,12 +196,12 @@ export function OTHistoryView() {
             />
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto">
+          <div className="flex items-center gap-1.5">
             {['ALL', 'SUBMITTED', 'APPROVED', 'REJECTED'].map((st) => (
               <button
                 key={st}
                 onClick={() => handleStatusChange(st)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                   statusFilter === st
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100'

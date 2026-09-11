@@ -369,10 +369,59 @@ export function EmployeesDirectoryView() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto justify-between sm:justify-end">
+        {/* Mobile Controls Grid (Zero horizontal scroll) */}
+        <div className="flex flex-col gap-2 w-full sm:hidden">
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <CustomSelect
+              size="sm"
+              className="w-full"
+              value={`${sortBy}_${sortOrder}`}
+              onChange={(val) => {
+                const [b, o] = val.split('_');
+                setSortBy(b);
+                setSortOrder(o as 'asc' | 'desc');
+                setCurrentPage(1);
+              }}
+              options={[
+                { value: 'createdAt_desc', label: 'Date (New)' },
+                { value: 'createdAt_asc', label: 'Date (Old)' },
+                { value: 'fullName_asc', label: 'Name (A-Z)' },
+                { value: 'fullName_desc', label: 'Name (Z-A)' },
+                { value: 'employeeCode_asc', label: 'Code (A-Z)' },
+                { value: 'employeeCode_desc', label: 'Code (Z-A)' },
+              ]}
+            />
+            <CustomSelect
+              size="sm"
+              className="w-full"
+              value={statusFilter}
+              onChange={(val) => {
+                setStatusFilter(val);
+                setCurrentPage(1);
+                setSelectedEmployeeIds([]);
+              }}
+              options={[
+                { value: 'ALL', label: 'All Statuses' },
+                { value: 'ACTIVE', label: 'Active' },
+                { value: 'PENDING_ACTIVATION', label: 'Pending' },
+                { value: 'DEACTIVATED', label: 'Deactivated' },
+              ]}
+            />
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center justify-center gap-1.5 bg-blue-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors shadow-2xs w-full cursor-pointer"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Add Employee
+          </button>
+        </div>
+
+        {/* Desktop Controls (Fast 1-click pills) */}
+        <div className="hidden sm:flex items-center gap-2">
           {/* Sort Dropdown */}
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
-            <span className="font-medium text-slate-500 hidden sm:inline">Sort:</span>
+            <span className="font-medium text-slate-500">Sort:</span>
             <CustomSelect
               size="sm"
               value={`${sortBy}_${sortOrder}`}

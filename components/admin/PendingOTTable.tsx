@@ -190,10 +190,50 @@ export function PendingOTTable({ initialRecords, records }: PendingOTTableProps)
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+        {/* Mobile Controls Grid (Zero horizontal scroll) */}
+        <div className="grid grid-cols-2 gap-2 w-full sm:hidden">
+          <CustomSelect
+            size="sm"
+            className="w-full"
+            value={`${sortBy}_${sortOrder}`}
+            onChange={(val) => {
+              const [b, o] = val.split('_');
+              setSortBy(b);
+              setSortOrder(o as 'asc' | 'desc');
+              setCurrentPage(1);
+            }}
+            options={[
+              { value: 'submittedAt_desc', label: 'Submitted (New)' },
+              { value: 'submittedAt_asc', label: 'Submitted (Old)' },
+              { value: 'workDate_desc', label: 'Work Date (New)' },
+              { value: 'workDate_asc', label: 'Work Date (Old)' },
+              { value: 'payableHours_desc', label: 'Hours (High)' },
+              { value: 'payableHours_asc', label: 'Hours (Low)' },
+              { value: 'fullName_asc', label: 'Employee (A-Z)' },
+            ]}
+          />
+          <CustomSelect
+            size="sm"
+            className="w-full"
+            value={statusFilter}
+            onChange={(st) => {
+              setStatusFilter(st);
+              setCurrentPage(1);
+            }}
+            options={[
+              { value: 'SUBMITTED', label: 'Pending Review' },
+              { value: 'ALL', label: 'All Records' },
+              { value: 'APPROVED', label: 'Approved' },
+              { value: 'REJECTED', label: 'Rejected' },
+            ]}
+          />
+        </div>
+
+        {/* Desktop Controls (Fast 1-click pills) */}
+        <div className="hidden sm:flex items-center gap-2">
           {/* Sort Dropdown */}
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
-            <span className="font-medium text-slate-500 hidden sm:inline">Sort:</span>
+            <span className="font-medium text-slate-500">Sort:</span>
             <CustomSelect
               size="sm"
               value={`${sortBy}_${sortOrder}`}
@@ -223,7 +263,7 @@ export function PendingOTTable({ initialRecords, records }: PendingOTTableProps)
                   setStatusFilter(st);
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                   statusFilter === st
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100'
